@@ -5,4 +5,5 @@ coverage/
 .env
 .DS_Store
 .vscode/
-.idea/
+.idea/output.txt
+output.txt
