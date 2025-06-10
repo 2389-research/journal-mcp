@@ -16,14 +16,16 @@ export interface EmbeddingData {
 export class EmbeddingService {
   private static instance: EmbeddingService;
   private extractor: FeatureExtractionPipeline | null = null;
-  private readonly modelName = 'Xenova/all-MiniLM-L6-v2';
+  private readonly modelName: string;
   private initPromise: Promise<void> | null = null;
 
-  private constructor() {}
+  private constructor(modelName?: string) {
+    this.modelName = modelName || process.env.JOURNAL_EMBEDDING_MODEL || 'Xenova/all-MiniLM-L6-v2';
+  }
 
-  static getInstance(): EmbeddingService {
+  static getInstance(modelName?: string): EmbeddingService {
     if (!EmbeddingService.instance) {
-      EmbeddingService.instance = new EmbeddingService();
+      EmbeddingService.instance = new EmbeddingService(modelName);
     }
     return EmbeddingService.instance;
   }
@@ -39,13 +41,21 @@ export class EmbeddingService {
 
   private async doInitialize(): Promise<void> {
     try {
-      console.error('Loading embedding model...');
+      console.error(`Loading embedding model: ${this.modelName}...`);
       this.extractor = await pipeline('feature-extraction', this.modelName);
       console.error('Embedding model loaded successfully');
     } catch (error) {
       console.error('Failed to load embedding model:', error);
       throw error;
     }
+  }
+
+  getModelName(): string {
+    return this.modelName;
+  }
+
+  static resetInstance(): void {
+    EmbeddingService.instance = null as any;
   }
 
   async generateEmbedding(text: string): Promise<number[]> {

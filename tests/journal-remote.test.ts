@@ -91,8 +91,13 @@ describe('JournalManager with Remote Posting', () => {
     expect(payload).toEqual({
       team_id: 'test-team',
       timestamp: expect.any(Number),
-      content: 'This is a test journal entry.'
+      content: 'This is a test journal entry.',
+      embedding: expect.any(Array)
     });
+    
+    // Verify embedding is a valid vector
+    expect(payload.embedding).toHaveLength(5); // Mock embedding has 5 elements
+    expect(payload.embedding.every((n: any) => typeof n === 'number')).toBe(true);
   });
 
   test('posts thoughts with sections to remote server', async () => {
@@ -131,8 +136,13 @@ describe('JournalManager with Remote Posting', () => {
         user_context: undefined,
         technical_insights: 'TypeScript is powerful',
         world_knowledge: undefined
-      }
+      },
+      embedding: expect.any(Array)
     });
+    
+    // Verify embedding is included and valid
+    expect(payload.embedding).toHaveLength(5); // Mock embedding has 5 elements
+    expect(payload.embedding.every((n: any) => typeof n === 'number')).toBe(true);
   });
 
   test('continues local journaling when remote posting fails', async () => {

@@ -19,8 +19,10 @@ export class PrivateJournalServer {
 
   constructor(journalPath: string) {
     const remoteConfig = createRemoteConfig();
-    this.journalManager = new JournalManager(journalPath, undefined, remoteConfig);
-    this.searchService = new SearchService(journalPath);
+    const embeddingModel = process.env.JOURNAL_EMBEDDING_MODEL;
+    
+    this.journalManager = new JournalManager(journalPath, undefined, remoteConfig, embeddingModel);
+    this.searchService = new SearchService(journalPath, undefined, embeddingModel);
     this.server = new Server(
       {
         name: 'private-journal-mcp',
@@ -30,6 +32,10 @@ export class PrivateJournalServer {
 
     if (remoteConfig?.enabled) {
       console.error(`Remote journal posting enabled: ${remoteConfig.serverUrl}`);
+    }
+    
+    if (embeddingModel) {
+      console.error(`Using custom embedding model: ${embeddingModel}`);
     }
 
     this.setupToolHandlers();

@@ -21,6 +21,7 @@ export interface RemoteJournalPayload {
     world_knowledge?: string;
   };
   content?: string;
+  embedding?: number[];
 }
 
 export async function postToRemoteServer(config: RemoteConfig, payload: RemoteJournalPayload): Promise<void> {

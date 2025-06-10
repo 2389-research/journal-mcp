@@ -32,8 +32,8 @@ export class SearchService {
   private projectPath: string;
   private userPath: string;
 
-  constructor(projectPath?: string, userPath?: string) {
-    this.embeddingService = EmbeddingService.getInstance();
+  constructor(projectPath?: string, userPath?: string, embeddingModel?: string) {
+    this.embeddingService = EmbeddingService.getInstance(embeddingModel);
     this.projectPath = projectPath || resolveProjectJournalPath();
     this.userPath = userPath || resolveUserJournalPath();
   }

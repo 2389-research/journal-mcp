@@ -14,10 +14,15 @@ export class JournalManager {
   private embeddingService: EmbeddingService;
   private remoteConfig?: RemoteConfig;
 
-  constructor(projectJournalPath: string, userJournalPath?: string, remoteConfig?: RemoteConfig) {
+  constructor(
+    projectJournalPath: string, 
+    userJournalPath?: string, 
+    remoteConfig?: RemoteConfig,
+    embeddingModel?: string
+  ) {
     this.projectJournalPath = projectJournalPath;
     this.userJournalPath = userJournalPath || resolveUserJournalPath();
-    this.embeddingService = EmbeddingService.getInstance();
+    this.embeddingService = EmbeddingService.getInstance(embeddingModel);
     this.remoteConfig = remoteConfig;
   }
 
@@ -316,9 +321,11 @@ ${sections.join('\n\n')}
         timestamp: timestamp.getTime()
       };
 
-      // If it's a simple content entry
+      // Generate content for embedding
+      let fullContent: string;
       if (thoughts.content) {
         payload.content = thoughts.content;
+        fullContent = thoughts.content;
       } else {
         // Structure as sections for thoughts
         payload.sections = {
@@ -328,6 +335,27 @@ ${sections.join('\n\n')}
           technical_insights: thoughts.technical_insights,
           world_knowledge: thoughts.world_knowledge
         };
+        
+        // Combine all sections for embedding generation
+        const sections = [];
+        if (thoughts.feelings) sections.push(`## Feelings\n\n${thoughts.feelings}`);
+        if (thoughts.project_notes) sections.push(`## Project Notes\n\n${thoughts.project_notes}`);
+        if (thoughts.user_context) sections.push(`## User Context\n\n${thoughts.user_context}`);
+        if (thoughts.technical_insights) sections.push(`## Technical Insights\n\n${thoughts.technical_insights}`);
+        if (thoughts.world_knowledge) sections.push(`## World Knowledge\n\n${thoughts.world_knowledge}`);
+        fullContent = sections.join('\n\n');
+      }
+
+      // Generate embedding for the content
+      try {
+        const { text } = this.embeddingService.extractSearchableText(fullContent);
+        if (text.trim().length > 0) {
+          const embedding = await this.embeddingService.generateEmbedding(text);
+          payload.embedding = Array.from(embedding);
+        }
+      } catch (embeddingError) {
+        // Log embedding error but don't fail the remote post
+        console.error('Failed to generate embedding for remote post:', embeddingError);
       }
 
       await postToRemoteServer(this.remoteConfig, payload);

@@ -47,6 +47,26 @@ This creates journal entries in `.private-journal/` in the current working direc
 private-journal-mcp --journal-path /path/to/my/journal
 ```
 
+### Embedding Model Configuration
+
+You can customize the AI model used for generating semantic embeddings:
+
+```bash
+export JOURNAL_EMBEDDING_MODEL="Xenova/all-distilroberta-v1"
+```
+
+**Available Models:**
+- `Xenova/all-MiniLM-L6-v2` (default) - Fast, 384 dimensions, good general performance
+- `Xenova/all-distilroberta-v1` - Larger, 768 dimensions, better accuracy
+- `Xenova/paraphrase-MiniLM-L6-v2` - Optimized for paraphrase detection
+- `Xenova/all-mpnet-base-v2` - High quality, 768 dimensions, slower but more accurate
+
+The embedding model affects:
+- **Local search quality** - More sophisticated models provide better semantic understanding
+- **Vector dimensions** - Impacts remote server storage and search capabilities
+- **Processing speed** - Larger models are slower but more accurate
+- **Memory usage** - Bigger models require more RAM
+
 ### Remote Server Integration
 
 To enable optional remote posting of journal entries to a team server, set these environment variables:
@@ -68,7 +88,8 @@ The server sends JSON payloads with this structure:
 {
   "team_id": "your-team-id",
   "timestamp": 1717160645123,
-  "content": "Journal entry text"
+  "content": "Journal entry text",
+  "embedding": [0.1, 0.2, 0.3, 0.4, 0.5, "..."]
 }
 ```
 
@@ -83,9 +104,20 @@ The server sends JSON payloads with this structure:
     "technical_insights": "TypeScript provides great type safety",
     "user_context": "Harper prefers concise responses",
     "world_knowledge": "Semantic search is powerful"
-  }
+  },
+  "embedding": [0.1, 0.2, 0.3, 0.4, 0.5, "..."]
 }
 ```
+
+#### Embedding Vectors
+
+Each journal entry includes a semantic embedding vector generated using local AI models (@xenova/transformers). These vectors enable:
+- **Semantic search** on the remote server
+- **Similarity matching** across team entries  
+- **Content clustering** and analysis
+- **AI-powered insights** without exposing raw content
+
+The embedding is a numeric array representing the semantic meaning of the journal entry content. Vector dimensions depend on the model used (typically 384 or 512 dimensions).
 
 The remote server should expect POST requests to `/journal/entries` with `x-api-key` and `x-team-id` headers.
 

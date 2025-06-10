@@ -81,6 +81,42 @@ describe('Remote Journal Posting', () => {
       );
     });
 
+    it('should handle payload with embedding vectors', async () => {
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        statusText: 'OK'
+      };
+      mockFetch.mockResolvedValue(mockResponse as any);
+
+      const payload: RemoteJournalPayload = {
+        team_id: 'test-team',
+        timestamp: Date.now(),
+        content: 'Test content with embedding',
+        embedding: [0.1, 0.2, 0.3, 0.4, 0.5]
+      };
+
+      await postToRemoteServer(mockConfig, payload);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.example.com/journal/entries',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': 'test-key',
+            'x-team-id': 'test-team'
+          },
+          body: JSON.stringify(payload)
+        })
+      );
+
+      // Verify the payload includes the embedding
+      const callArgs = mockFetch.mock.calls[0][1];
+      const sentPayload = JSON.parse(callArgs.body);
+      expect(sentPayload.embedding).toEqual([0.1, 0.2, 0.3, 0.4, 0.5]);
+    });
+
     it('should skip posting when config is disabled', async () => {
       const disabledConfig: RemoteConfig = {
         ...mockConfig,
