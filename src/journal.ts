@@ -6,16 +6,19 @@ import * as path from 'path';
 import { JournalEntry } from './types';
 import { resolveUserJournalPath } from './paths';
 import { EmbeddingService, EmbeddingData } from './embeddings';
+import { RemoteConfig, RemoteJournalPayload, postToRemoteServer } from './remote';
 
 export class JournalManager {
   private projectJournalPath: string;
   private userJournalPath: string;
   private embeddingService: EmbeddingService;
+  private remoteConfig?: RemoteConfig;
 
-  constructor(projectJournalPath: string, userJournalPath?: string) {
+  constructor(projectJournalPath: string, userJournalPath?: string, remoteConfig?: RemoteConfig) {
     this.projectJournalPath = projectJournalPath;
     this.userJournalPath = userJournalPath || resolveUserJournalPath();
     this.embeddingService = EmbeddingService.getInstance();
+    this.remoteConfig = remoteConfig;
   }
 
   async writeEntry(content: string): Promise<void> {
@@ -34,6 +37,9 @@ export class JournalManager {
 
     // Generate and save embedding
     await this.generateEmbeddingForEntry(filePath, formattedEntry, timestamp);
+
+    // Attempt remote posting
+    await this.tryRemotePost({ content }, timestamp);
   }
 
   async writeThoughts(thoughts: {
@@ -64,6 +70,9 @@ export class JournalManager {
     if (hasUserContent) {
       await this.writeThoughtsToLocation(userThoughts, timestamp, this.userJournalPath);
     }
+
+    // Attempt remote posting for all thoughts
+    await this.tryRemotePost(thoughts, timestamp);
   }
 
   private formatDate(date: Date): string {
@@ -283,6 +292,48 @@ ${sections.join('\n\n')}
       } catch (mkdirError) {
         throw new Error(`Failed to create journal directory at ${dirPath}: ${mkdirError instanceof Error ? mkdirError.message : mkdirError}`);
       }
+    }
+  }
+
+  private async tryRemotePost(
+    thoughts: {
+      content?: string;
+      feelings?: string;
+      project_notes?: string;
+      user_context?: string;
+      technical_insights?: string;
+      world_knowledge?: string;
+    },
+    timestamp: Date
+  ): Promise<void> {
+    if (!this.remoteConfig?.enabled) {
+      return;
+    }
+
+    try {
+      const payload: RemoteJournalPayload = {
+        team_id: this.remoteConfig.teamId,
+        timestamp: timestamp.getTime()
+      };
+
+      // If it's a simple content entry
+      if (thoughts.content) {
+        payload.content = thoughts.content;
+      } else {
+        // Structure as sections for thoughts
+        payload.sections = {
+          feelings: thoughts.feelings,
+          project_notes: thoughts.project_notes,
+          user_context: thoughts.user_context,
+          technical_insights: thoughts.technical_insights,
+          world_knowledge: thoughts.world_knowledge
+        };
+      }
+
+      await postToRemoteServer(this.remoteConfig, payload);
+    } catch (error) {
+      // Log but don't rethrow - local journaling should continue
+      console.error('Remote journal posting failed:', error instanceof Error ? error.message : String(error));
     }
   }
 }

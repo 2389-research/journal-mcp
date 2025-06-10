@@ -10,6 +10,7 @@ import {
 import { JournalManager } from './journal';
 import { ProcessFeelingsRequest, ProcessThoughtsRequest } from './types';
 import { SearchService } from './search';
+import { createRemoteConfig } from './remote';
 
 export class PrivateJournalServer {
   private server: Server;
@@ -17,7 +18,8 @@ export class PrivateJournalServer {
   private searchService: SearchService;
 
   constructor(journalPath: string) {
-    this.journalManager = new JournalManager(journalPath);
+    const remoteConfig = createRemoteConfig();
+    this.journalManager = new JournalManager(journalPath, undefined, remoteConfig);
     this.searchService = new SearchService(journalPath);
     this.server = new Server(
       {
@@ -25,6 +27,10 @@ export class PrivateJournalServer {
         version: '1.0.0',
       }
     );
+
+    if (remoteConfig?.enabled) {
+      console.error(`Remote journal posting enabled: ${remoteConfig.serverUrl}`);
+    }
 
     this.setupToolHandlers();
   }

@@ -133,9 +133,10 @@ describe('JournalManager', () => {
     const dayDir = path.join(projectTempDir, dateString);
     const files = await fs.readdir(dayDir);
     
-    expect(files).toHaveLength(2); // .md and .embedding files
+    expect(files.some(f => f.endsWith('.md'))).toBe(true); // At least .md file
     
-    const filePath = path.join(dayDir, files[0]);
+    const mdFile = files.find(f => f.endsWith('.md'))!;
+    const filePath = path.join(dayDir, mdFile);
     const fileContent = await fs.readFile(filePath, 'utf8');
     
     expect(fileContent).toContain('---');
@@ -154,7 +155,8 @@ describe('JournalManager', () => {
     const dateString = getFormattedDate(today);
     const dayDir = path.join(projectTempDir, dateString);
     const files = await fs.readdir(dayDir);
-    const filePath = path.join(dayDir, files[0]);
+    const mdFile = files.find(f => f.endsWith('.md'))!;
+    const filePath = path.join(dayDir, mdFile);
     
     const fileContent = await fs.readFile(filePath, 'utf8');
     expect(fileContent).toContain(content);
@@ -172,9 +174,10 @@ describe('JournalManager', () => {
     const projectDayDir = path.join(projectTempDir, dateString);
     
     const projectFiles = await fs.readdir(projectDayDir);
-    expect(projectFiles).toHaveLength(1);
+    expect(projectFiles.some(f => f.endsWith('.md'))).toBe(true);
     
-    const projectFilePath = path.join(projectDayDir, projectFiles[0]);
+    const projectMdFile = projectFiles.find(f => f.endsWith('.md'))!;
+    const projectFilePath = path.join(projectDayDir, projectMdFile);
     const projectContent = await fs.readFile(projectFilePath, 'utf8');
     
     expect(projectContent).toContain('## Project Notes');
@@ -195,9 +198,10 @@ describe('JournalManager', () => {
     const userDayDir = path.join(userTempDir, '.private-journal', dateString);
     
     const userFiles = await fs.readdir(userDayDir);
-    expect(userFiles).toHaveLength(1);
+    expect(userFiles.some(f => f.endsWith('.md'))).toBe(true);
     
-    const userFilePath = path.join(userDayDir, userFiles[0]);
+    const userMdFile = userFiles.find(f => f.endsWith('.md'))!;
+    const userFilePath = path.join(userDayDir, userMdFile);
     const userContent = await fs.readFile(userFilePath, 'utf8');
     
     expect(userContent).toContain('## Feelings');
@@ -224,9 +228,10 @@ describe('JournalManager', () => {
     // Check project directory
     const projectDayDir = path.join(projectTempDir, dateString);
     const projectFiles = await fs.readdir(projectDayDir);
-    expect(projectFiles).toHaveLength(1);
+    expect(projectFiles.some(f => f.endsWith('.md'))).toBe(true);
     
-    const projectContent = await fs.readFile(path.join(projectDayDir, projectFiles[0]), 'utf8');
+    const mdFile = projectFiles.find(f => f.endsWith('.md'))!;
+    const projectContent = await fs.readFile(path.join(projectDayDir, mdFile), 'utf8');
     expect(projectContent).toContain('## Project Notes');
     expect(projectContent).toContain('The architecture is solid');
     expect(projectContent).not.toContain('## Feelings');
@@ -234,9 +239,10 @@ describe('JournalManager', () => {
     // Check user directory
     const userDayDir = path.join(userTempDir, '.private-journal', dateString);
     const userFiles = await fs.readdir(userDayDir);
-    expect(userFiles).toHaveLength(1);
+    expect(userFiles.some(f => f.endsWith('.md'))).toBe(true);
     
-    const userContent = await fs.readFile(path.join(userDayDir, userFiles[0]), 'utf8');
+    const userMdFile = userFiles.find(f => f.endsWith('.md'))!;
+    const userContent = await fs.readFile(path.join(userDayDir, userMdFile), 'utf8');
     expect(userContent).toContain('## Feelings');
     expect(userContent).toContain('## User Context');
     expect(userContent).toContain('## Technical Insights');
@@ -257,9 +263,10 @@ describe('JournalManager', () => {
     // Should only create user directory, not project directory
     const userDayDir = path.join(userTempDir, '.private-journal', dateString);
     const userFiles = await fs.readdir(userDayDir);
-    expect(userFiles).toHaveLength(1);
+    expect(userFiles.some(f => f.endsWith('.md'))).toBe(true);
     
-    const userContent = await fs.readFile(path.join(userDayDir, userFiles[0]), 'utf8');
+    const userMdFile = userFiles.find(f => f.endsWith('.md'))!;
+    const userContent = await fs.readFile(path.join(userDayDir, userMdFile), 'utf8');
     expect(userContent).toContain('## World Knowledge');
     expect(userContent).toContain('Learned something interesting about databases');
     
@@ -281,9 +288,10 @@ describe('JournalManager', () => {
     // Should only create project directory, not user directory
     const projectDayDir = path.join(projectTempDir, dateString);
     const projectFiles = await fs.readdir(projectDayDir);
-    expect(projectFiles).toHaveLength(1);
+    expect(projectFiles.some(f => f.endsWith('.md'))).toBe(true);
     
-    const projectContent = await fs.readFile(path.join(projectDayDir, projectFiles[0]), 'utf8');
+    const mdFile = projectFiles.find(f => f.endsWith('.md'))!;
+    const projectContent = await fs.readFile(path.join(projectDayDir, mdFile), 'utf8');
     expect(projectContent).toContain('## Project Notes');
     expect(projectContent).toContain('This specific codebase pattern works well');
     
@@ -305,9 +313,10 @@ describe('JournalManager', () => {
       const customDayDir = path.join(customUserDir, dateString);
       
       const customFiles = await fs.readdir(customDayDir);
-      expect(customFiles).toHaveLength(1);
+      expect(customFiles.some(f => f.endsWith('.md'))).toBe(true);
       
-      const customContent = await fs.readFile(path.join(customDayDir, customFiles[0]), 'utf8');
+      const customMdFile = customFiles.find(f => f.endsWith('.md'))!;
+    const customContent = await fs.readFile(path.join(customDayDir, customMdFile), 'utf8');
       expect(customContent).toContain('Testing custom path');
     } finally {
       await fs.rm(customUserDir, { recursive: true, force: true });

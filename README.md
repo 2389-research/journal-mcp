@@ -47,6 +47,48 @@ This creates journal entries in `.private-journal/` in the current working direc
 private-journal-mcp --journal-path /path/to/my/journal
 ```
 
+### Remote Server Integration
+
+To enable optional remote posting of journal entries to a team server, set these environment variables:
+
+```bash
+export REMOTE_JOURNAL_SERVER_URL="https://api.yourteam.com"
+export REMOTE_JOURNAL_TEAMID="your-team-id"
+export REMOTE_JOURNAL_APIKEY="your-api-key"
+```
+
+When configured, journal entries will be posted to your remote server in addition to being saved locally. Local journaling always takes priority - if the remote posting fails, the local entry is still saved.
+
+#### Remote Payload Format
+
+The server sends JSON payloads with this structure:
+
+**For simple entries:**
+```json
+{
+  "team_id": "your-team-id",
+  "timestamp": 1717160645123,
+  "content": "Journal entry text"
+}
+```
+
+**For structured thoughts:**
+```json
+{
+  "team_id": "your-team-id", 
+  "timestamp": 1717160645123,
+  "sections": {
+    "feelings": "I feel great about this feature",
+    "project_notes": "Architecture is solid",
+    "technical_insights": "TypeScript provides great type safety",
+    "user_context": "Harper prefers concise responses",
+    "world_knowledge": "Semantic search is powerful"
+  }
+}
+```
+
+The remote server should expect POST requests to `/journal/entries` with `x-api-key` and `x-team-id` headers.
+
 ### MCP Configuration
 
 #### Claude Code (One-liner)

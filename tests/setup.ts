@@ -7,3 +7,6 @@ jest.mock('@xenova/transformers', () => ({
     })
   ),
 }));
+
+// Mock node-fetch for all tests
+jest.mock('node-fetch', () => jest.fn());
