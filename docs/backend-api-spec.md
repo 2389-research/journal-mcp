@@ -7,7 +7,7 @@ This document specifies the REST API for the journal backend server that receive
 ## Base URL
 
 ```
-https://api.yourcompany.com/v1
+https://api.yourcompany.com/v1/journal
 ```
 
 ## Authentication
@@ -29,21 +29,21 @@ All requests require API key authentication via headers:
 
 ```typescript
 interface JournalEntryPayload {
-  team_id: string;           // Team identifier for data isolation
-  timestamp: number;         // Unix timestamp in milliseconds
+  team_id: string; // Team identifier for data isolation
+  timestamp: number; // Unix timestamp in milliseconds
 
   // Either structured sections OR simple content
   sections?: {
-    feelings?: string;           // Personal emotional content
-    project_notes?: string;      // Project-specific technical notes
+    feelings?: string; // Personal emotional content
+    project_notes?: string; // Project-specific technical notes
     technical_insights?: string; // General technical learnings
-    user_context?: string;       // User interaction observations
-    world_knowledge?: string;    // General domain knowledge
+    user_context?: string; // User interaction observations
+    world_knowledge?: string; // General domain knowledge
   };
-  content?: string;              // Simple text content (alternative to sections)
+  content?: string; // Simple text content (alternative to sections)
 
   // AI-generated semantic embedding vector
-  embedding?: number[];          // Semantic embedding (384 or 768 dimensions)
+  embedding?: number[]; // Semantic embedding (384 or 768 dimensions)
 }
 ```
 
@@ -51,13 +51,13 @@ interface JournalEntryPayload {
 
 ```typescript
 interface JournalEntryResponse {
-  id: string;                    // Server-generated entry ID
+  id: string; // Server-generated entry ID
   team_id: string;
   timestamp: number;
-  created_at: string;            // ISO 8601 timestamp
+  created_at: string; // ISO 8601 timestamp
   sections?: object;
   content?: string;
-  embedding_model?: string;      // Model used for embedding generation
+  embedding_model?: string; // Model used for embedding generation
   embedding_dimensions?: number; // Vector dimensions
 }
 ```
@@ -66,12 +66,12 @@ interface JournalEntryResponse {
 
 ```typescript
 interface SearchRequest {
-  query: string;                 // Natural language search query
-  limit?: number;                // Max results (default: 10, max: 100)
-  offset?: number;               // Pagination offset (default: 0)
-  date_from?: string;            // ISO 8601 date filter
-  date_to?: string;              // ISO 8601 date filter
-  sections?: string[];           // Filter by section types
+  query: string; // Natural language search query
+  limit?: number; // Max results (default: 10, max: 100)
+  offset?: number; // Pagination offset (default: 0)
+  date_from?: string; // ISO 8601 date filter
+  date_to?: string; // ISO 8601 date filter
+  sections?: string[]; // Filter by section types
   similarity_threshold?: number; // Minimum similarity score (0.0-1.0)
 }
 ```
@@ -82,18 +82,18 @@ interface SearchRequest {
 interface SearchResponse {
   results: SearchResult[];
   total_count: number;
-  query_embedding?: number[];    // Generated query embedding
+  query_embedding?: number[]; // Generated query embedding
 }
 
 interface SearchResult {
   id: string;
   team_id: string;
-  similarity_score: number;      // Cosine similarity (0.0-1.0)
+  similarity_score: number; // Cosine similarity (0.0-1.0)
   timestamp: number;
   created_at: string;
   sections?: object;
   content?: string;
-  matched_sections?: string[];   // Which sections matched
+  matched_sections?: string[]; // Which sections matched
 }
 ```
 
@@ -104,11 +104,13 @@ interface SearchResult {
 Create a new journal entry.
 
 **Headers:**
+
 - `Content-Type: application/json`
 - `x-api-key: {api_key}`
 - `x-team-id: {team_id}`
 
 **Request Body:**
+
 ```json
 {
   "team_id": "team-abc123",
@@ -123,6 +125,7 @@ Create a new journal entry.
 ```
 
 **Response:** `201 Created`
+
 ```json
 {
   "id": "entry_xyz789",
@@ -140,6 +143,7 @@ Create a new journal entry.
 ```
 
 **Error Responses:**
+
 - `400 Bad Request`: Invalid payload structure
 - `401 Unauthorized`: Missing or invalid API key
 - `403 Forbidden`: Invalid team ID
@@ -151,10 +155,12 @@ Create a new journal entry.
 Retrieve journal entries with optional filtering.
 
 **Headers:**
+
 - `x-api-key: {api_key}`
 - `x-team-id: {team_id}`
 
 **Query Parameters:**
+
 - `limit` (optional): Number of entries (default: 20, max: 100)
 - `offset` (optional): Pagination offset (default: 0)
 - `date_from` (optional): ISO 8601 date filter
@@ -162,6 +168,7 @@ Retrieve journal entries with optional filtering.
 - `order` (optional): `desc` or `asc` by timestamp (default: `desc`)
 
 **Response:** `200 OK`
+
 ```json
 {
   "entries": [
@@ -185,10 +192,12 @@ Retrieve journal entries with optional filtering.
 Retrieve a specific journal entry.
 
 **Headers:**
+
 - `x-api-key: {api_key}`
 - `x-team-id: {team_id}`
 
 **Response:** `200 OK`
+
 ```json
 {
   "id": "entry_xyz789",
@@ -205,6 +214,7 @@ Retrieve a specific journal entry.
 ```
 
 **Error Responses:**
+
 - `404 Not Found`: Entry does not exist or not accessible
 
 ### POST /journal/search
@@ -212,11 +222,13 @@ Retrieve a specific journal entry.
 Perform semantic search across journal entries.
 
 **Headers:**
+
 - `Content-Type: application/json`
 - `x-api-key: {api_key}`
 - `x-team-id: {team_id}`
 
 **Request Body:**
+
 ```json
 {
   "query": "times I felt frustrated with TypeScript",
@@ -228,6 +240,7 @@ Perform semantic search across journal entries.
 ```
 
 **Response:** `200 OK`
+
 ```json
 {
   "results": [
@@ -253,12 +266,14 @@ Perform semantic search across journal entries.
 Delete a specific journal entry.
 
 **Headers:**
+
 - `x-api-key: {api_key}`
 - `x-team-id: {team_id}`
 
 **Response:** `204 No Content`
 
 **Error Responses:**
+
 - `404 Not Found`: Entry does not exist or not accessible
 - `403 Forbidden`: Insufficient permissions
 
@@ -269,10 +284,12 @@ Delete a specific journal entry.
 Get team journal statistics.
 
 **Headers:**
+
 - `x-api-key: {api_key}`
 - `x-team-id: {team_id}`
 
 **Response:** `200 OK`
+
 ```json
 {
   "team_id": "team-abc123",
@@ -299,6 +316,7 @@ Get team journal statistics.
 - **Retrieval Requests**: 2000 requests per hour per team
 
 Rate limit headers included in responses:
+
 - `X-RateLimit-Limit`: Request limit per window
 - `X-RateLimit-Remaining`: Requests remaining in window
 - `X-RateLimit-Reset`: Unix timestamp when window resets
@@ -306,16 +324,19 @@ Rate limit headers included in responses:
 ## Data Privacy & Security
 
 ### Encryption
+
 - All data encrypted at rest using AES-256
 - TLS 1.3 required for all API communications
 - Embedding vectors stored with same encryption as content
 
 ### Data Isolation
+
 - Complete data isolation between teams via `team_id`
 - API keys scoped to specific teams
 - No cross-team data access possible
 
 ### Data Retention
+
 - Journal entries retained indefinitely unless explicitly deleted
 - Deleted entries permanently removed (no soft deletes)
 - Embedding vectors deleted with associated content
@@ -345,6 +366,7 @@ All error responses follow this format:
 Configure webhooks for journal events.
 
 **Request Body:**
+
 ```json
 {
   "url": "https://your-app.com/journal-webhook",
@@ -370,21 +392,25 @@ Configure webhooks for journal events.
 ## Implementation Notes
 
 ### Embedding Storage
+
 - Store embedding vectors in optimized vector database (e.g., Pinecone, Weaviate, pgvector)
 - Support multiple embedding models per team
 - Maintain embedding model versioning for consistency
 
 ### Search Performance
+
 - Pre-compute embedding similarities for common queries
 - Implement caching for frequently accessed entries
 - Use approximate nearest neighbor search for large datasets
 
 ### Scaling Considerations
+
 - Implement database sharding by team_id
 - Use CDN for static API documentation
 - Consider read replicas for search workloads
 
 ### Monitoring
+
 - Track embedding generation performance
 - Monitor search query patterns and performance
 - Alert on unusual API usage patterns
