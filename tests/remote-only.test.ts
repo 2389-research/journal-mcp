@@ -36,7 +36,7 @@ describe('Remote-Only Mode', () => {
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     // Create temporary directory
     tempDir = await fs.mkdtemp(path.join(require('os').tmpdir(), 'journal-test-'));
-    
+
     remoteOnlyConfig = {
       serverUrl: 'https://api.example.com',
       teamId: 'test-team',
@@ -47,14 +47,14 @@ describe('Remote-Only Mode', () => {
 
     journalManager = new JournalManager(tempDir, undefined, remoteOnlyConfig);
     searchService = new SearchService(tempDir, undefined, undefined, remoteOnlyConfig);
-    
+
     jest.clearAllMocks();
   });
 
   afterEach(async () => {
     // Restore console.error
     consoleErrorSpy.mockRestore();
-    
+
     // Clean up temporary directory
     try {
       await fs.rm(tempDir, { recursive: true, force: true });

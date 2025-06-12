@@ -89,7 +89,7 @@ export REMOTE_JOURNAL_ONLY="true"
 
 In remote-only mode:
 - **No local storage** - entries go directly to the backend server
-- **Server-side search** - all search queries use the backend API  
+- **Server-side search** - all search queries use the backend API
 - **Error handling** - journal operations fail if server is unavailable
 - **Team collaboration** - automatic sharing across team members
 - **Centralized AI** - semantic search powered by backend infrastructure
@@ -111,7 +111,7 @@ The server sends JSON payloads with this structure:
 **For structured thoughts:**
 ```json
 {
-  "team_id": "your-team-id", 
+  "team_id": "your-team-id",
   "timestamp": 1717160645123,
   "sections": {
     "feelings": "I feel great about this feature",
@@ -128,7 +128,7 @@ The server sends JSON payloads with this structure:
 
 Each journal entry includes a semantic embedding vector generated using local AI models (@xenova/transformers). These vectors enable:
 - **Semantic search** on the remote server
-- **Similarity matching** across team entries  
+- **Similarity matching** across team entries
 - **Content clustering** and analysis
 - **AI-powered insights** without exposing raw content
 
@@ -166,7 +166,7 @@ The server provides comprehensive journaling and search capabilities:
 ### `process_thoughts`
 Multi-section private journaling with these optional categories:
 - **feelings**: Private emotional processing space
-- **project_notes**: Technical insights specific to current project  
+- **project_notes**: Technical insights specific to current project
 - **user_context**: Notes about collaborating with humans
 - **technical_insights**: General software engineering learnings
 - **world_knowledge**: Domain knowledge and interesting discoveries

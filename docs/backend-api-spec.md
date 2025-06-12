@@ -31,17 +31,17 @@ All requests require API key authentication via headers:
 interface JournalEntryPayload {
   team_id: string;           // Team identifier for data isolation
   timestamp: number;         // Unix timestamp in milliseconds
-  
+
   // Either structured sections OR simple content
   sections?: {
     feelings?: string;           // Personal emotional content
-    project_notes?: string;      // Project-specific technical notes  
+    project_notes?: string;      // Project-specific technical notes
     technical_insights?: string; // General technical learnings
     user_context?: string;       // User interaction observations
     world_knowledge?: string;    // General domain knowledge
   };
   content?: string;              // Simple text content (alternative to sections)
-  
+
   // AI-generated semantic embedding vector
   embedding?: number[];          // Semantic embedding (384 or 768 dimensions)
 }
@@ -126,12 +126,12 @@ Create a new journal entry.
 ```json
 {
   "id": "entry_xyz789",
-  "team_id": "team-abc123", 
+  "team_id": "team-abc123",
   "timestamp": 1717160645123,
   "created_at": "2024-05-31T14:30:45.123Z",
   "sections": {
     "feelings": "Feeling frustrated with TypeScript today",
-    "project_notes": "Working on the journal MCP server", 
+    "project_notes": "Working on the journal MCP server",
     "technical_insights": "Learned about semantic search with transformers"
   },
   "embedding_model": "Xenova/all-MiniLM-L6-v2",
@@ -295,7 +295,7 @@ Get team journal statistics.
 ## Rate Limiting
 
 - **Journal Entry Creation**: 100 requests per hour per team
-- **Search Requests**: 1000 requests per hour per team  
+- **Search Requests**: 1000 requests per hour per team
 - **Retrieval Requests**: 2000 requests per hour per team
 
 Rate limit headers included in responses:
@@ -374,7 +374,7 @@ Configure webhooks for journal events.
 - Support multiple embedding models per team
 - Maintain embedding model versioning for consistency
 
-### Search Performance  
+### Search Performance
 - Pre-compute embedding similarities for common queries
 - Implement caching for frequently accessed entries
 - Use approximate nearest neighbor search for large datasets

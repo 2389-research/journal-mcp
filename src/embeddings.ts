@@ -105,7 +105,7 @@ export class EmbeddingService {
 
   async loadEmbedding(filePath: string): Promise<EmbeddingData | null> {
     const embeddingPath = filePath.replace(/\.md$/, '.embedding');
-    
+
     try {
       const content = await fs.readFile(embeddingPath, 'utf8');
       return JSON.parse(content);
@@ -120,7 +120,7 @@ export class EmbeddingService {
   extractSearchableText(markdownContent: string): { text: string; sections: string[] } {
     // Remove YAML frontmatter
     const withoutFrontmatter = markdownContent.replace(/^---\n.*?\n---\n/s, '');
-    
+
     // Extract sections
     const sections: string[] = [];
     const sectionMatches = withoutFrontmatter.match(/^## (.+)$/gm);

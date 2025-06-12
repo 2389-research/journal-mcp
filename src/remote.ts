@@ -123,7 +123,7 @@ export async function getRemoteEntries(config: RemoteConfig, limit?: number, off
     const params = new URLSearchParams();
     if (limit) params.append('limit', limit.toString());
     if (offset !== undefined) params.append('offset', offset.toString());
-    
+
     const response = await fetch(`${config.serverUrl}/journal/entries?${params}`, {
       method: 'GET',
       headers: {

@@ -48,7 +48,7 @@ This is an MCP (Model Context Protocol) server that provides Claude with private
 
 **File Organization:**
 - **Project journals**: `.private-journal/` in project root for project-specific notes
-- **Personal journals**: `~/.private-journal/` for cross-project personal thoughts  
+- **Personal journals**: `~/.private-journal/` for cross-project personal thoughts
 - **Daily structure**: `YYYY-MM-DD/HH-MM-SS-μμμμμμ.md` with microsecond precision
 - **Search index**: `.embedding` files alongside each journal entry for semantic search
 - TypeScript compilation to `dist/` for production

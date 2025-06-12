@@ -25,11 +25,11 @@ describe('JournalManager with Remote Posting', () => {
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     projectTempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'journal-remote-test-'));
     userTempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'journal-user-remote-test-'));
-    
+
     // Mock HOME environment
     originalHome = process.env.HOME;
     process.env.HOME = userTempDir;
-    
+
     mockConfig = {
       serverUrl: 'https://api.test.com',
       teamId: 'test-team',
@@ -37,9 +37,9 @@ describe('JournalManager with Remote Posting', () => {
       enabled: true,
       remoteOnly: false
     };
-    
+
     journalManager = new JournalManager(projectTempDir, undefined, mockConfig);
-    
+
     // Reset fetch mock
     mockFetch.mockClear();
   });
@@ -48,14 +48,14 @@ describe('JournalManager with Remote Posting', () => {
     // Restore console methods
     consoleErrorSpy.mockRestore();
     consoleLogSpy.mockRestore();
-    
+
     // Restore original HOME
     if (originalHome !== undefined) {
       process.env.HOME = originalHome;
     } else {
       delete process.env.HOME;
     }
-    
+
     await fs.rm(projectTempDir, { recursive: true, force: true });
     await fs.rm(userTempDir, { recursive: true, force: true });
   });
@@ -77,7 +77,7 @@ describe('JournalManager with Remote Posting', () => {
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
     const dateString = `${year}-${month}-${day}`;
-    
+
     const dayDir = path.join(projectTempDir, dateString);
     const files = await fs.readdir(dayDir);
     expect(files.some(f => f.endsWith('.md'))).toBe(true);
@@ -104,7 +104,7 @@ describe('JournalManager with Remote Posting', () => {
       content: 'This is a test journal entry.',
       embedding: expect.any(Array)
     });
-    
+
     // Verify embedding is a valid vector
     expect(payload.embedding).toHaveLength(5); // Mock embedding has 5 elements
     expect(payload.embedding.every((n: any) => typeof n === 'number')).toBe(true);
@@ -149,7 +149,7 @@ describe('JournalManager with Remote Posting', () => {
       },
       embedding: expect.any(Array)
     });
-    
+
     // Verify embedding is included and valid
     expect(payload.embedding).toHaveLength(5); // Mock embedding has 5 elements
     expect(payload.embedding.every((n: any) => typeof n === 'number')).toBe(true);
@@ -160,7 +160,7 @@ describe('JournalManager with Remote Posting', () => {
     mockFetch.mockRejectedValue(new Error('Network error'));
 
     const content = 'This should still be saved locally.';
-    
+
     // This should not throw an error
     await journalManager.writeEntry(content);
 
@@ -170,7 +170,7 @@ describe('JournalManager with Remote Posting', () => {
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
     const dateString = `${year}-${month}-${day}`;
-    
+
     const dayDir = path.join(projectTempDir, dateString);
     const files = await fs.readdir(dayDir);
     expect(files.some(f => f.endsWith('.md'))).toBe(true);
@@ -189,9 +189,9 @@ describe('JournalManager with Remote Posting', () => {
       ...mockConfig,
       enabled: false
     };
-    
+
     const journalManagerDisabled = new JournalManager(projectTempDir, undefined, disabledConfig);
-    
+
     const content = 'This should not be posted remotely.';
     await journalManagerDisabled.writeEntry(content);
 
@@ -204,7 +204,7 @@ describe('JournalManager with Remote Posting', () => {
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
     const dateString = `${year}-${month}-${day}`;
-    
+
     const dayDir = path.join(projectTempDir, dateString);
     const files = await fs.readdir(dayDir);
     expect(files.some(f => f.endsWith('.md'))).toBe(true);
@@ -212,7 +212,7 @@ describe('JournalManager with Remote Posting', () => {
 
   test('skips remote posting when no config is provided', async () => {
     const journalManagerNoRemote = new JournalManager(projectTempDir);
-    
+
     const content = 'This should not be posted remotely.';
     await journalManagerNoRemote.writeEntry(content);
 
@@ -225,7 +225,7 @@ describe('JournalManager with Remote Posting', () => {
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
     const dateString = `${year}-${month}-${day}`;
-    
+
     const dayDir = path.join(projectTempDir, dateString);
     const files = await fs.readdir(dayDir);
     expect(files.some(f => f.endsWith('.md'))).toBe(true);
@@ -275,7 +275,7 @@ describe('JournalManager with Remote Posting', () => {
       mockFetch.mockResolvedValue(mockResponse);
 
       const content = 'This should fail.';
-      
+
       await expect(remoteOnlyJournalManager.writeEntry(content)).rejects.toThrow(
         'Remote journal posting failed: Remote server error: 500 Internal Server Error'
       );
@@ -291,7 +291,7 @@ describe('JournalManager with Remote Posting', () => {
       const thoughts = {
         feelings: 'This should fail too'
       };
-      
+
       await expect(remoteOnlyJournalManager.writeThoughts(thoughts)).rejects.toThrow(
         'Remote journal posting failed: Network timeout'
       );

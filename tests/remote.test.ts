@@ -14,7 +14,7 @@ describe('Remote Journal Posting', () => {
     apiKey: 'test-key',
     enabled: true
   };
-  
+
   let consoleErrorSpy: jest.SpyInstance;
   let consoleLogSpy: jest.SpyInstance;
 
@@ -29,7 +29,7 @@ describe('Remote Journal Posting', () => {
     delete process.env.REMOTE_JOURNAL_APIKEY;
     delete process.env.REMOTE_JOURNAL_ONLY;
   });
-  
+
   afterEach(() => {
     // Restore console methods
     consoleErrorSpy.mockRestore();

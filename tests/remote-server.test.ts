@@ -30,23 +30,23 @@ describe('Remote Journal HTTP Integration', () => {
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     projectTempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'journal-http-test-'));
     userTempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'journal-user-http-test-'));
-    
+
     // Mock HOME environment
     originalHome = process.env.HOME;
     process.env.HOME = userTempDir;
-    
+
     // Reset captured calls
     capturedFetchCalls = [];
-    
+
     // Setup mock fetch to capture calls and return appropriate responses
     mockFetch.mockImplementation((url: string, options: any) => {
       const body = options.body ? JSON.parse(options.body) : null;
       capturedFetchCalls.push({ url, options, body });
-      
+
       // Simulate different response scenarios
       const apiKey = options.headers?.['x-api-key'];
       const teamId = options.headers?.['x-team-id'];
-      
+
       if (apiKey === 'invalid-key') {
         return Promise.resolve({
           ok: false,
@@ -54,7 +54,7 @@ describe('Remote Journal HTTP Integration', () => {
           statusText: 'Forbidden'
         });
       }
-      
+
       if (teamId === 'error-team') {
         return Promise.resolve({
           ok: false,
@@ -62,11 +62,11 @@ describe('Remote Journal HTTP Integration', () => {
           statusText: 'Internal Server Error'
         });
       }
-      
+
       if (url.includes('unreachable')) {
         return Promise.reject(new Error('connect ECONNREFUSED'));
       }
-      
+
       // Default successful response
       return Promise.resolve({
         ok: true,
@@ -80,17 +80,17 @@ describe('Remote Journal HTTP Integration', () => {
     // Restore console methods
     consoleErrorSpy.mockRestore();
     consoleLogSpy.mockRestore();
-    
+
     // Restore original HOME
     if (originalHome !== undefined) {
       process.env.HOME = originalHome;
     } else {
       delete process.env.HOME;
     }
-    
+
     // Clear mock
     mockFetch.mockClear();
-    
+
     await fs.rm(projectTempDir, { recursive: true, force: true });
     await fs.rm(userTempDir, { recursive: true, force: true });
   });
@@ -102,16 +102,16 @@ describe('Remote Journal HTTP Integration', () => {
       apiKey: 'test-api-key',
       enabled: true
     };
-    
+
     journalManager = new JournalManager(projectTempDir, undefined, remoteConfig);
-    
+
     await journalManager.writeEntry('Test HTTP request validation');
 
     // Wait for async HTTP request
     await new Promise(resolve => setTimeout(resolve, 50));
 
     expect(capturedFetchCalls).toHaveLength(1);
-    
+
     const call = capturedFetchCalls[0];
     expect(call.url).toBe('https://api.test.com/journal/entries');
     expect(call.options.method).toBe('POST');
@@ -127,9 +127,9 @@ describe('Remote Journal HTTP Integration', () => {
       apiKey: 'test-api-key',
       enabled: true
     };
-    
+
     journalManager = new JournalManager(projectTempDir, undefined, remoteConfig);
-    
+
     await journalManager.writeEntry('Testing payload structure');
 
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -141,7 +141,7 @@ describe('Remote Journal HTTP Integration', () => {
       content: 'Testing payload structure',
       embedding: expect.any(Array)
     });
-    
+
     // Verify embedding is valid vector
     expect(call.body.embedding).toHaveLength(5); // Mock embedding length
     expect(call.body.embedding.every((n: any) => typeof n === 'number')).toBe(true);
@@ -154,15 +154,15 @@ describe('Remote Journal HTTP Integration', () => {
       apiKey: 'test-api-key',
       enabled: true
     };
-    
+
     journalManager = new JournalManager(projectTempDir, undefined, remoteConfig);
-    
+
     const thoughts = {
       feelings: 'Testing HTTP integration feels great',
       project_notes: 'HTTP validation is working well',
       technical_insights: 'Mock fetch provides good test coverage'
     };
-    
+
     await journalManager.writeThoughts(thoughts);
 
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -189,9 +189,9 @@ describe('Remote Journal HTTP Integration', () => {
       apiKey: 'test-api-key',
       enabled: true
     };
-    
+
     journalManager = new JournalManager(projectTempDir, undefined, remoteConfig);
-    
+
     const beforeTime = Date.now();
     await journalManager.writeEntry('Timestamp precision test');
     const afterTime = Date.now();
@@ -211,9 +211,9 @@ describe('Remote Journal HTTP Integration', () => {
       apiKey: 'invalid-key', // Triggers 403 response
       enabled: true
     };
-    
+
     journalManager = new JournalManager(projectTempDir, undefined, remoteConfig);
-    
+
     // Should not throw - local journaling continues
     await expect(journalManager.writeEntry('Auth error test')).resolves.not.toThrow();
 
@@ -222,14 +222,14 @@ describe('Remote Journal HTTP Integration', () => {
     // Verify request was attempted
     expect(capturedFetchCalls).toHaveLength(1);
     expect(capturedFetchCalls[0].options.headers['x-api-key']).toBe('invalid-key');
-    
+
     // Verify local file was still created
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
     const dateString = `${year}-${month}-${day}`;
-    
+
     const dayDir = path.join(projectTempDir, dateString);
     const files = await fs.readdir(dayDir);
     expect(files.some(f => f.endsWith('.md'))).toBe(true);
@@ -242,9 +242,9 @@ describe('Remote Journal HTTP Integration', () => {
       apiKey: 'test-api-key',
       enabled: true
     };
-    
+
     journalManager = new JournalManager(projectTempDir, undefined, remoteConfig);
-    
+
     // Should not throw - local journaling continues
     await expect(journalManager.writeEntry('Server error test')).resolves.not.toThrow();
 
@@ -262,9 +262,9 @@ describe('Remote Journal HTTP Integration', () => {
       apiKey: 'test-api-key',
       enabled: true
     };
-    
+
     journalManager = new JournalManager(projectTempDir, undefined, remoteConfig);
-    
+
     // Should not throw - local journaling continues
     await expect(journalManager.writeEntry('Connection error test')).resolves.not.toThrow();
 
@@ -272,14 +272,14 @@ describe('Remote Journal HTTP Integration', () => {
 
     // Verify request was attempted (but failed)
     expect(capturedFetchCalls).toHaveLength(1);
-    
+
     // Verify local file was still created
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
     const dateString = `${year}-${month}-${day}`;
-    
+
     const dayDir = path.join(projectTempDir, dateString);
     const files = await fs.readdir(dayDir);
     expect(files.some(f => f.endsWith('.md'))).toBe(true);
@@ -292,18 +292,18 @@ describe('Remote Journal HTTP Integration', () => {
       apiKey: 'test-api-key',
       enabled: true
     };
-    
+
     journalManager = new JournalManager(projectTempDir, undefined, remoteConfig);
-    
+
     await journalManager.writeEntry('JSON serialization test');
 
     await new Promise(resolve => setTimeout(resolve, 50));
 
     const call = capturedFetchCalls[0];
-    
+
     // Verify the body string is valid JSON
     expect(() => JSON.parse(call.options.body)).not.toThrow();
-    
+
     // Verify parsed body matches expected structure
     const parsedBody = JSON.parse(call.options.body);
     expect(parsedBody).toHaveProperty('team_id');
@@ -319,16 +319,16 @@ describe('Remote Journal HTTP Integration', () => {
       apiKey: 'test-api-key',
       enabled: true
     };
-    
+
     journalManager = new JournalManager(projectTempDir, undefined, remoteConfig);
-    
+
     await journalManager.writeEntry('Header validation test');
 
     await new Promise(resolve => setTimeout(resolve, 50));
 
     const call = capturedFetchCalls[0];
     const headers = call.options.headers;
-    
+
     expect(headers).toHaveProperty('Content-Type', 'application/json');
     expect(headers).toHaveProperty('x-api-key', 'test-api-key');
     expect(headers).toHaveProperty('x-team-id', 'test-team');

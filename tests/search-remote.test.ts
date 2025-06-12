@@ -37,7 +37,7 @@ describe('SearchService with Remote Integration', () => {
     // Mock console.error to keep test output clean
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'search-remote-test-'));
-    
+
     hybridConfig = {
       serverUrl: 'https://api.test.com',
       teamId: 'test-team',
@@ -56,14 +56,14 @@ describe('SearchService with Remote Integration', () => {
 
     hybridSearchService = new SearchService(tempDir, undefined, undefined, hybridConfig);
     remoteOnlySearchService = new SearchService(tempDir, undefined, undefined, remoteOnlyConfig);
-    
+
     jest.clearAllMocks();
   });
 
   afterEach(async () => {
     // Restore console.error
     consoleErrorSpy.mockRestore();
-    
+
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
@@ -72,7 +72,7 @@ describe('SearchService with Remote Integration', () => {
       // Create some local test files first
       const dayDir = path.join(tempDir, '2024-05-31');
       await fs.mkdir(dayDir, { recursive: true });
-      
+
       const testEntry = `---
 title: "Test Entry"
 date: 2024-05-31T14:30:45.123Z
@@ -327,7 +327,7 @@ I feel frustrated with TypeScript today`;
       });
 
       const results = await remoteOnlySearchService.search('excited feature');
-      
+
       expect(results[0].text).toBe(
         '## Feelings\n\nI feel excited\n\n## Project Notes\n\nWorking on new feature\n\n## Technical Insights\n\nTypeScript is great'
       );
@@ -356,7 +356,7 @@ I feel frustrated with TypeScript today`;
       });
 
       const results = await remoteOnlySearchService.listRecent();
-      
+
       expect(results[0].sections).toEqual(['User Context', 'World Knowledge']);
     });
 
@@ -379,7 +379,7 @@ I feel frustrated with TypeScript today`;
       });
 
       const results = await remoteOnlySearchService.search('empty');
-      
+
       expect(results[0].text).toBe('');
       expect(results[0].sections).toEqual([]);
     });

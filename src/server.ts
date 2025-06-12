@@ -20,7 +20,7 @@ export class PrivateJournalServer {
   constructor(journalPath: string) {
     const remoteConfig = createRemoteConfig();
     const embeddingModel = process.env.JOURNAL_EMBEDDING_MODEL;
-    
+
     this.journalManager = new JournalManager(journalPath, undefined, remoteConfig, embeddingModel);
     this.searchService = new SearchService(journalPath, undefined, embeddingModel, remoteConfig);
     this.server = new Server(
@@ -36,7 +36,7 @@ export class PrivateJournalServer {
         console.error('Remote-only mode: entries will not be stored locally');
       }
     }
-    
+
     if (embeddingModel) {
       console.error(`Using custom embedding model: ${embeddingModel}`);
     }
@@ -221,8 +221,8 @@ export class PrivateJournalServer {
             content: [
               {
                 type: 'text',
-                text: results.length > 0 
-                  ? `Found ${results.length} relevant entries:\n\n${results.map((result, i) => 
+                text: results.length > 0
+                  ? `Found ${results.length} relevant entries:\n\n${results.map((result, i) =>
                       `${i + 1}. [Score: ${result.score.toFixed(3)}] ${new Date(result.timestamp).toLocaleDateString()} (${result.type})\n` +
                       `   Sections: ${result.sections.join(', ')}\n` +
                       `   Path: ${result.path}\n` +
@@ -282,8 +282,8 @@ export class PrivateJournalServer {
             content: [
               {
                 type: 'text',
-                text: results.length > 0 
-                  ? `Recent entries (last ${days} days):\n\n${results.map((result, i) => 
+                text: results.length > 0
+                  ? `Recent entries (last ${days} days):\n\n${results.map((result, i) =>
                       `${i + 1}. ${new Date(result.timestamp).toLocaleDateString()} (${result.type})\n` +
                       `   Sections: ${result.sections.join(', ')}\n` +
                       `   Path: ${result.path}\n` +
@@ -305,7 +305,7 @@ export class PrivateJournalServer {
 
   async run(): Promise<void> {
     const remoteConfig = createRemoteConfig();
-    
+
     // Skip embedding generation in remote-only mode
     if (!remoteConfig?.remoteOnly) {
       try {

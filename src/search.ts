@@ -75,8 +75,8 @@ export class SearchService {
     const filtered = allEmbeddings.filter(embedding => {
       // Filter by sections if specified
       if (sections && sections.length > 0) {
-        const hasMatchingSection = sections.some(section => 
-          embedding.sections.some(embeddingSection => 
+        const hasMatchingSection = sections.some(section =>
+          embedding.sections.some(embeddingSection =>
             embeddingSection.toLowerCase().includes(section.toLowerCase())
           )
         );
@@ -98,7 +98,7 @@ export class SearchService {
       .map(embedding => {
         const score = this.embeddingService.cosineSimilarity(queryEmbedding, embedding.embedding);
         const excerpt = this.generateExcerpt(embedding.text, query);
-        
+
         return {
           path: embedding.path,
           score,
@@ -214,7 +214,7 @@ export class SearchService {
 
     try {
       const response = await searchRemoteServer(this.remoteConfig, searchRequest);
-      
+
       return response.results.map(result => ({
         path: result.id, // Use remote ID as path
         score: result.similarity_score,
@@ -239,7 +239,7 @@ export class SearchService {
 
     try {
       const response = await getRemoteEntries(this.remoteConfig, limit);
-      
+
       return response.entries.map(entry => ({
         path: entry.id, // Use remote ID as path
         score: 1, // No similarity score for listing
@@ -286,18 +286,18 @@ export class SearchService {
   }
 
   private async loadEmbeddingsFromPath(
-    basePath: string, 
+    basePath: string,
     type: 'project' | 'user'
   ): Promise<Array<EmbeddingData & { type: 'project' | 'user' }>> {
     const embeddings: Array<EmbeddingData & { type: 'project' | 'user' }> = [];
 
     try {
       const dayDirs = await fs.readdir(basePath);
-      
+
       for (const dayDir of dayDirs) {
         const dayPath = path.join(basePath, dayDir);
         const stat = await fs.stat(dayPath);
-        
+
         if (!stat.isDirectory() || !dayDir.match(/^\d{4}-\d{2}-\d{2}$/)) {
           continue;
         }
@@ -334,7 +334,7 @@ export class SearchService {
 
     const queryWords = query.toLowerCase().split(/\s+/);
     const textLower = text.toLowerCase();
-    
+
     // Find the best position to start the excerpt
     let bestPosition = 0;
     let bestScore = 0;
