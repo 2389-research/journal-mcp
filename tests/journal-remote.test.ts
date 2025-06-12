@@ -64,7 +64,9 @@ describe('JournalManager with Remote Posting', () => {
     const mockResponse = {
       ok: true,
       status: 200,
-      statusText: 'OK'
+      statusText: 'OK',
+      text: jest.fn().mockResolvedValue('Success'),
+      json: jest.fn().mockResolvedValue({})
     };
     mockFetch.mockResolvedValue(mockResponse);
 
@@ -84,13 +86,12 @@ describe('JournalManager with Remote Posting', () => {
 
     // Verify remote call was made
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.test.com/journal/entries',
+      'https://api.test.com/teams/test-team/journal/entries',
       expect.objectContaining({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': 'test-key',
-          'x-team-id': 'test-team'
+          'X-API-Key': 'test-key'
         }
       })
     );
@@ -114,7 +115,9 @@ describe('JournalManager with Remote Posting', () => {
     const mockResponse = {
       ok: true,
       status: 200,
-      statusText: 'OK'
+      statusText: 'OK',
+      text: jest.fn().mockResolvedValue('Success'),
+      json: jest.fn().mockResolvedValue({})
     };
     mockFetch.mockResolvedValue(mockResponse);
 
@@ -128,7 +131,7 @@ describe('JournalManager with Remote Posting', () => {
 
     // Verify remote call was made
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.test.com/journal/entries',
+      'https://api.test.com/teams/test-team/journal/entries',
       expect.objectContaining({
         method: 'POST'
       })
@@ -246,7 +249,9 @@ describe('JournalManager with Remote Posting', () => {
       const mockResponse = {
         ok: true,
         status: 200,
-        statusText: 'OK'
+        statusText: 'OK',
+        text: jest.fn().mockResolvedValue('Success'),
+        json: jest.fn().mockResolvedValue({})
       };
       mockFetch.mockResolvedValue(mockResponse);
 
@@ -259,7 +264,7 @@ describe('JournalManager with Remote Posting', () => {
 
       // Verify remote call was made
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.test.com/journal/entries',
+        'https://api.test.com/teams/test-team/journal/entries',
         expect.objectContaining({
           method: 'POST'
         })
@@ -270,7 +275,9 @@ describe('JournalManager with Remote Posting', () => {
       const mockResponse = {
         ok: false,
         status: 500,
-        statusText: 'Internal Server Error'
+        statusText: 'Internal Server Error',
+        text: jest.fn().mockResolvedValue('Server Error'),
+        json: jest.fn().mockResolvedValue({})
       };
       mockFetch.mockResolvedValue(mockResponse);
 
@@ -305,7 +312,9 @@ describe('JournalManager with Remote Posting', () => {
       const mockResponse = {
         ok: true,
         status: 200,
-        statusText: 'OK'
+        statusText: 'OK',
+        text: jest.fn().mockResolvedValue('Success'),
+        json: jest.fn().mockResolvedValue({})
       };
       mockFetch.mockResolvedValue(mockResponse);
 
@@ -326,7 +335,7 @@ describe('JournalManager with Remote Posting', () => {
 
       // Verify remote call was made with correct payload
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.test.com/journal/entries',
+        'https://api.test.com/teams/test-team/journal/entries',
         expect.objectContaining({
           method: 'POST',
           body: expect.stringContaining('"sections"')

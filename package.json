@@ -1,6 +1,6 @@
 {
   "name": "private-journal-mcp",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A lightweight MCP server that provides Claude with a private journaling capability to process feelings and thoughts",
   "main": "dist/index.js",
   "bin": {

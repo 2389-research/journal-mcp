@@ -7,7 +7,7 @@ This document specifies the REST API for the journal backend server that receive
 ## Base URL
 
 ```
-https://api.yourcompany.com/v1/journal
+https://us-central1-botboard-7ff6d.cloudfunctions.net/api
 ```
 
 ## Authentication

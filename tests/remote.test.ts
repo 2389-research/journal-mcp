@@ -41,7 +41,9 @@ describe('Remote Journal Posting', () => {
       const mockResponse = {
         ok: true,
         status: 200,
-        statusText: 'OK'
+        statusText: 'OK',
+        text: jest.fn().mockResolvedValue('Success'),
+        json: jest.fn().mockResolvedValue({})
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 
@@ -54,13 +56,12 @@ describe('Remote Journal Posting', () => {
       await postToRemoteServer(mockConfig, payload);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.example.com/journal/entries',
+        'https://api.example.com/teams/test-team/journal/entries',
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': 'test-key',
-            'x-team-id': 'test-team'
+            'X-API-Key': 'test-key'
           },
           body: JSON.stringify(payload)
         }
@@ -71,7 +72,9 @@ describe('Remote Journal Posting', () => {
       const mockResponse = {
         ok: true,
         status: 200,
-        statusText: 'OK'
+        statusText: 'OK',
+        text: jest.fn().mockResolvedValue('Success'),
+        json: jest.fn().mockResolvedValue({})
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 
@@ -87,7 +90,7 @@ describe('Remote Journal Posting', () => {
       await postToRemoteServer(mockConfig, payload);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.example.com/journal/entries',
+        'https://api.example.com/teams/test-team/journal/entries',
         expect.objectContaining({
           body: JSON.stringify(payload)
         })
@@ -98,7 +101,9 @@ describe('Remote Journal Posting', () => {
       const mockResponse = {
         ok: true,
         status: 200,
-        statusText: 'OK'
+        statusText: 'OK',
+        text: jest.fn().mockResolvedValue('Success'),
+        json: jest.fn().mockResolvedValue({})
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 
@@ -112,13 +117,12 @@ describe('Remote Journal Posting', () => {
       await postToRemoteServer(mockConfig, payload);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.example.com/journal/entries',
+        'https://api.example.com/teams/test-team/journal/entries',
         expect.objectContaining({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': 'test-key',
-            'x-team-id': 'test-team'
+            'X-API-Key': 'test-key'
           },
           body: JSON.stringify(payload)
         })
@@ -151,7 +155,9 @@ describe('Remote Journal Posting', () => {
       const mockResponse = {
         ok: false,
         status: 500,
-        statusText: 'Internal Server Error'
+        statusText: 'Internal Server Error',
+        text: jest.fn().mockResolvedValue('Server Error'),
+        json: jest.fn().mockResolvedValue({})
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 
@@ -281,13 +287,12 @@ describe('Remote Journal Posting', () => {
       const result = await searchRemoteServer(mockConfig, searchRequest);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.example.com/journal/search',
+        'https://api.example.com/teams/test-team/journal/search',
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': 'test-key',
-            'x-team-id': 'test-team'
+            'X-API-Key': 'test-key'
           },
           body: JSON.stringify(searchRequest)
         }
@@ -313,7 +318,9 @@ describe('Remote Journal Posting', () => {
       const mockResponse = {
         ok: false,
         status: 500,
-        statusText: 'Internal Server Error'
+        statusText: 'Internal Server Error',
+        text: jest.fn().mockResolvedValue('Server Error'),
+        json: jest.fn().mockResolvedValue({})
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 
@@ -355,12 +362,11 @@ describe('Remote Journal Posting', () => {
       const result = await getRemoteEntries(mockConfig, 10, 0);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.example.com/journal/entries?limit=10&offset=0',
+        'https://api.example.com/teams/test-team/journal/entries?limit=10&offset=0',
         {
           method: 'GET',
           headers: {
-            'x-api-key': 'test-key',
-            'x-team-id': 'test-team'
+            'X-API-Key': 'test-key'
           }
         }
       );
@@ -384,7 +390,7 @@ describe('Remote Journal Posting', () => {
       await getRemoteEntries(mockConfig);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.example.com/journal/entries?',
+        'https://api.example.com/teams/test-team/journal/entries?',
         expect.objectContaining({
           method: 'GET'
         })
@@ -406,7 +412,9 @@ describe('Remote Journal Posting', () => {
       const mockResponse = {
         ok: false,
         status: 404,
-        statusText: 'Not Found'
+        statusText: 'Not Found',
+        text: jest.fn().mockResolvedValue('Not Found'),
+        json: jest.fn().mockResolvedValue({})
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 

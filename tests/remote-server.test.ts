@@ -44,14 +44,16 @@ describe('Remote Journal HTTP Integration', () => {
       capturedFetchCalls.push({ url, options, body });
 
       // Simulate different response scenarios
-      const apiKey = options.headers?.['x-api-key'];
-      const teamId = options.headers?.['x-team-id'];
+      const apiKey = options.headers?.['X-API-Key'];
+      const teamId = options.headers?.['x-team-id']; // This header is no longer used
 
       if (apiKey === 'invalid-key') {
         return Promise.resolve({
           ok: false,
           status: 403,
-          statusText: 'Forbidden'
+          statusText: 'Forbidden',
+          text: jest.fn().mockResolvedValue('Forbidden'),
+          json: jest.fn().mockResolvedValue({})
         });
       }
 
@@ -59,7 +61,9 @@ describe('Remote Journal HTTP Integration', () => {
         return Promise.resolve({
           ok: false,
           status: 500,
-          statusText: 'Internal Server Error'
+          statusText: 'Internal Server Error',
+          text: jest.fn().mockResolvedValue('Server Error'),
+          json: jest.fn().mockResolvedValue({})
         });
       }
 
@@ -71,7 +75,9 @@ describe('Remote Journal HTTP Integration', () => {
       return Promise.resolve({
         ok: true,
         status: 200,
-        statusText: 'OK'
+        statusText: 'OK',
+        text: jest.fn().mockResolvedValue('Success'),
+        json: jest.fn().mockResolvedValue({})
       });
     });
   });
@@ -113,11 +119,10 @@ describe('Remote Journal HTTP Integration', () => {
     expect(capturedFetchCalls).toHaveLength(1);
 
     const call = capturedFetchCalls[0];
-    expect(call.url).toBe('https://api.test.com/journal/entries');
+    expect(call.url).toBe('https://api.test.com/teams/test-team/journal/entries');
     expect(call.options.method).toBe('POST');
     expect(call.options.headers['Content-Type']).toBe('application/json');
-    expect(call.options.headers['x-api-key']).toBe('test-api-key');
-    expect(call.options.headers['x-team-id']).toBe('test-team');
+    expect(call.options.headers['X-API-Key']).toBe('test-api-key');
   });
 
   test('sends JSON payload with content and embedding vector', async () => {
@@ -221,7 +226,7 @@ describe('Remote Journal HTTP Integration', () => {
 
     // Verify request was attempted
     expect(capturedFetchCalls).toHaveLength(1);
-    expect(capturedFetchCalls[0].options.headers['x-api-key']).toBe('invalid-key');
+    expect(capturedFetchCalls[0].options.headers['X-API-Key']).toBe('invalid-key');
 
     // Verify local file was still created
     const today = new Date();
@@ -252,7 +257,8 @@ describe('Remote Journal HTTP Integration', () => {
 
     // Verify request was attempted
     expect(capturedFetchCalls).toHaveLength(1);
-    expect(capturedFetchCalls[0].options.headers['x-team-id']).toBe('error-team');
+    // Headers should only include X-API-Key
+    expect(capturedFetchCalls[0].options.headers['X-API-Key']).toBe('test-api-key');
   });
 
   test('handles network connection errors gracefully', async () => {
@@ -330,7 +336,6 @@ describe('Remote Journal HTTP Integration', () => {
     const headers = call.options.headers;
 
     expect(headers).toHaveProperty('Content-Type', 'application/json');
-    expect(headers).toHaveProperty('x-api-key', 'test-api-key');
-    expect(headers).toHaveProperty('x-team-id', 'test-team');
+    expect(headers).toHaveProperty('X-API-Key', 'test-api-key');
   });
 });

@@ -68,7 +68,9 @@ describe('Remote-Only Mode', () => {
       const mockResponse = {
         ok: true,
         status: 200,
-        statusText: 'OK'
+        statusText: 'OK',
+        text: jest.fn().mockResolvedValue('Success'),
+        json: jest.fn().mockResolvedValue({})
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 
@@ -80,12 +82,11 @@ describe('Remote-Only Mode', () => {
 
       // Verify remote posting was called
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.example.com/journal/entries',
+        'https://api.example.com/teams/test-team/journal/entries',
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
-            'x-api-key': 'test-key',
-            'x-team-id': 'test-team'
+            'X-API-Key': 'test-key'
           })
         })
       );
@@ -95,7 +96,9 @@ describe('Remote-Only Mode', () => {
       const mockResponse = {
         ok: true,
         status: 200,
-        statusText: 'OK'
+        statusText: 'OK',
+        text: jest.fn().mockResolvedValue('Success'),
+        json: jest.fn().mockResolvedValue({})
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 
@@ -110,7 +113,7 @@ describe('Remote-Only Mode', () => {
 
       // Verify remote posting was called with sections
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.example.com/journal/entries',
+        'https://api.example.com/teams/test-team/journal/entries',
         expect.objectContaining({
           method: 'POST',
           body: expect.stringContaining('"sections"')
@@ -122,7 +125,8 @@ describe('Remote-Only Mode', () => {
       const mockResponse = {
         ok: false,
         status: 500,
-        statusText: 'Internal Server Error'
+        statusText: 'Internal Server Error',
+        text: jest.fn().mockResolvedValue('Server Error')
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 
@@ -176,7 +180,7 @@ describe('Remote-Only Mode', () => {
       const results = await searchService.search('frustrated TypeScript');
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.example.com/journal/search',
+        'https://api.example.com/teams/test-team/journal/search',
         expect.objectContaining({
           method: 'POST',
           body: expect.stringContaining('"query":"frustrated TypeScript"')
@@ -210,7 +214,7 @@ describe('Remote-Only Mode', () => {
       const results = await searchService.listRecent({ limit: 5 });
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.example.com/journal/entries?limit=5',
+        'https://api.example.com/teams/test-team/journal/entries?limit=5',
         expect.objectContaining({
           method: 'GET'
         })
@@ -230,7 +234,8 @@ describe('Remote-Only Mode', () => {
       const mockResponse = {
         ok: false,
         status: 500,
-        statusText: 'Internal Server Error'
+        statusText: 'Internal Server Error',
+        text: jest.fn().mockResolvedValue('Server Error')
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 
@@ -261,7 +266,7 @@ describe('Remote-Only Mode', () => {
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.example.com/journal/search',
+        'https://api.example.com/teams/test-team/journal/search',
         expect.objectContaining({
           body: expect.stringContaining('"limit":20')
         })

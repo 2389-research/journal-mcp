@@ -136,13 +136,12 @@ I feel frustrated with TypeScript today`;
       const results = await remoteOnlySearchService.search('frustrated TypeScript');
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.test.com/journal/search',
+        'https://api.test.com/teams/test-team/journal/search',
         expect.objectContaining({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': 'test-key',
-            'x-team-id': 'test-team'
+            'X-API-Key': 'test-key'
           },
           body: expect.stringContaining('"query":"frustrated TypeScript"')
         })
@@ -208,12 +207,11 @@ I feel frustrated with TypeScript today`;
       const results = await remoteOnlySearchService.listRecent({ limit: 5 });
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.test.com/journal/entries?limit=5',
+        'https://api.test.com/teams/test-team/journal/entries?limit=5',
         expect.objectContaining({
           method: 'GET',
           headers: {
-            'x-api-key': 'test-key',
-            'x-team-id': 'test-team'
+            'X-API-Key': 'test-key'
           }
         })
       );
@@ -233,7 +231,9 @@ I feel frustrated with TypeScript today`;
       const mockResponse = {
         ok: false,
         status: 500,
-        statusText: 'Internal Server Error'
+        statusText: 'Internal Server Error',
+        text: jest.fn().mockResolvedValue('Server Error'),
+        json: jest.fn().mockResolvedValue({})
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 
@@ -246,7 +246,8 @@ I feel frustrated with TypeScript today`;
       const mockResponse = {
         ok: false,
         status: 404,
-        statusText: 'Not Found'
+        statusText: 'Not Found',
+        text: jest.fn().mockResolvedValue('Not Found')
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 
