@@ -28,6 +28,13 @@ export class JournalManager {
 
   async writeEntry(content: string): Promise<void> {
     const timestamp = new Date();
+    
+    // In remote-only mode, skip local file operations
+    if (this.remoteConfig?.remoteOnly) {
+      await this.tryRemotePost({ content }, timestamp);
+      return;
+    }
+    
     const dateString = this.formatDate(timestamp);
     const timeString = this.formatTimestamp(timestamp);
     
@@ -55,6 +62,12 @@ export class JournalManager {
     world_knowledge?: string;
   }): Promise<void> {
     const timestamp = new Date();
+    
+    // In remote-only mode, skip local file operations
+    if (this.remoteConfig?.remoteOnly) {
+      await this.tryRemotePost(thoughts, timestamp);
+      return;
+    }
     
     // Split thoughts into project-local and user-global
     const projectThoughts = { project_notes: thoughts.project_notes };
@@ -360,7 +373,11 @@ ${sections.join('\n\n')}
 
       await postToRemoteServer(this.remoteConfig, payload);
     } catch (error) {
-      // Log but don't rethrow - local journaling should continue
+      // In remote-only mode, rethrow errors since there's no local fallback
+      if (this.remoteConfig?.remoteOnly) {
+        throw new Error(`Remote journal posting failed: ${error instanceof Error ? error.message : String(error)}`);
+      }
+      // Log but don't rethrow - local journaling should continue in hybrid mode
       console.error('Remote journal posting failed:', error instanceof Error ? error.message : String(error));
     }
   }

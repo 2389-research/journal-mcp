@@ -16,8 +16,13 @@ describe('JournalManager with Remote Posting', () => {
   let journalManager: JournalManager;
   let originalHome: string | undefined;
   let mockConfig: RemoteConfig;
+  let consoleErrorSpy: jest.SpyInstance;
+  let consoleLogSpy: jest.SpyInstance;
 
   beforeEach(async () => {
+    // Mock console output to keep test output clean
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     projectTempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'journal-remote-test-'));
     userTempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'journal-user-remote-test-'));
     
@@ -29,7 +34,8 @@ describe('JournalManager with Remote Posting', () => {
       serverUrl: 'https://api.test.com',
       teamId: 'test-team',
       apiKey: 'test-key',
-      enabled: true
+      enabled: true,
+      remoteOnly: false
     };
     
     journalManager = new JournalManager(projectTempDir, undefined, mockConfig);
@@ -39,6 +45,10 @@ describe('JournalManager with Remote Posting', () => {
   });
 
   afterEach(async () => {
+    // Restore console methods
+    consoleErrorSpy.mockRestore();
+    consoleLogSpy.mockRestore();
+    
     // Restore original HOME
     if (originalHome !== undefined) {
       process.env.HOME = originalHome;
@@ -219,5 +229,109 @@ describe('JournalManager with Remote Posting', () => {
     const dayDir = path.join(projectTempDir, dateString);
     const files = await fs.readdir(dayDir);
     expect(files.some(f => f.endsWith('.md'))).toBe(true);
+  });
+
+  describe('remote-only mode', () => {
+    let remoteOnlyJournalManager: JournalManager;
+
+    beforeEach(() => {
+      const remoteOnlyConfig: RemoteConfig = {
+        ...mockConfig,
+        remoteOnly: true
+      };
+      remoteOnlyJournalManager = new JournalManager(projectTempDir, undefined, remoteOnlyConfig);
+    });
+
+    test('skips local file creation in remote-only mode', async () => {
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        statusText: 'OK'
+      };
+      mockFetch.mockResolvedValue(mockResponse);
+
+      const content = 'This should only go to remote server.';
+      await remoteOnlyJournalManager.writeEntry(content);
+
+      // Verify NO local files were created
+      const files = await fs.readdir(projectTempDir);
+      expect(files).toHaveLength(0);
+
+      // Verify remote call was made
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.test.com/journal/entries',
+        expect.objectContaining({
+          method: 'POST'
+        })
+      );
+    });
+
+    test('throws error when remote server fails in remote-only mode', async () => {
+      const mockResponse = {
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error'
+      };
+      mockFetch.mockResolvedValue(mockResponse);
+
+      const content = 'This should fail.';
+      
+      await expect(remoteOnlyJournalManager.writeEntry(content)).rejects.toThrow(
+        'Remote journal posting failed: Remote server error: 500 Internal Server Error'
+      );
+
+      // Verify NO local files were created even on error
+      const files = await fs.readdir(projectTempDir);
+      expect(files).toHaveLength(0);
+    });
+
+    test('throws error when network fails in remote-only mode', async () => {
+      mockFetch.mockRejectedValue(new Error('Network timeout'));
+
+      const thoughts = {
+        feelings: 'This should fail too'
+      };
+      
+      await expect(remoteOnlyJournalManager.writeThoughts(thoughts)).rejects.toThrow(
+        'Remote journal posting failed: Network timeout'
+      );
+
+      // Verify NO local files were created
+      const files = await fs.readdir(projectTempDir);
+      expect(files).toHaveLength(0);
+    });
+
+    test('skips local thoughts storage in remote-only mode', async () => {
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        statusText: 'OK'
+      };
+      mockFetch.mockResolvedValue(mockResponse);
+
+      const thoughts = {
+        feelings: 'Remote only feelings',
+        project_notes: 'Remote only project notes'
+      };
+
+      await remoteOnlyJournalManager.writeThoughts(thoughts);
+
+      // Verify NO local files were created in project or user directories
+      let projectFiles = await fs.readdir(projectTempDir);
+      expect(projectFiles).toHaveLength(0);
+
+      // Check user directory too (should be empty since no local storage)
+      let userFiles = await fs.readdir(userTempDir);
+      expect(userFiles).toHaveLength(0);
+
+      // Verify remote call was made with correct payload
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.test.com/journal/entries',
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining('"sections"')
+        })
+      );
+    });
   });
 });

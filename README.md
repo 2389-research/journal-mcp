@@ -79,6 +79,21 @@ export REMOTE_JOURNAL_APIKEY="your-api-key"
 
 When configured, journal entries will be posted to your remote server in addition to being saved locally. Local journaling always takes priority - if the remote posting fails, the local entry is still saved.
 
+#### Remote-Only Mode
+
+For teams using a backend server as the single source of truth, enable remote-only mode to skip local file storage entirely:
+
+```bash
+export REMOTE_JOURNAL_ONLY="true"
+```
+
+In remote-only mode:
+- **No local storage** - entries go directly to the backend server
+- **Server-side search** - all search queries use the backend API  
+- **Error handling** - journal operations fail if server is unavailable
+- **Team collaboration** - automatic sharing across team members
+- **Centralized AI** - semantic search powered by backend infrastructure
+
 #### Remote Payload Format
 
 The server sends JSON payloads with this structure:

@@ -22,7 +22,7 @@ export class PrivateJournalServer {
     const embeddingModel = process.env.JOURNAL_EMBEDDING_MODEL;
     
     this.journalManager = new JournalManager(journalPath, undefined, remoteConfig, embeddingModel);
-    this.searchService = new SearchService(journalPath, undefined, embeddingModel);
+    this.searchService = new SearchService(journalPath, undefined, embeddingModel, remoteConfig);
     this.server = new Server(
       {
         name: 'private-journal-mcp',
@@ -32,6 +32,9 @@ export class PrivateJournalServer {
 
     if (remoteConfig?.enabled) {
       console.error(`Remote journal posting enabled: ${remoteConfig.serverUrl}`);
+      if (remoteConfig.remoteOnly) {
+        console.error('Remote-only mode: entries will not be stored locally');
+      }
     }
     
     if (embeddingModel) {
@@ -301,16 +304,20 @@ export class PrivateJournalServer {
   }
 
   async run(): Promise<void> {
-    // Generate missing embeddings on startup
-    try {
-      console.error('Checking for missing embeddings...');
-      const count = await this.journalManager.generateMissingEmbeddings();
-      if (count > 0) {
-        console.error(`Generated embeddings for ${count} existing journal entries.`);
+    const remoteConfig = createRemoteConfig();
+    
+    // Skip embedding generation in remote-only mode
+    if (!remoteConfig?.remoteOnly) {
+      try {
+        console.error('Checking for missing embeddings...');
+        const count = await this.journalManager.generateMissingEmbeddings();
+        if (count > 0) {
+          console.error(`Generated embeddings for ${count} existing journal entries.`);
+        }
+      } catch (error) {
+        console.error('Failed to generate missing embeddings on startup:', error);
+        // Don't fail startup if embedding generation fails
       }
-    } catch (error) {
-      console.error('Failed to generate missing embeddings on startup:', error);
-      // Don't fail startup if embedding generation fails
     }
 
     const transport = new StdioServerTransport();

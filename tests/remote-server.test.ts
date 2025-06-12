@@ -21,8 +21,13 @@ describe('Remote Journal HTTP Integration', () => {
     options: any;
     body: any;
   }>;
+  let consoleErrorSpy: jest.SpyInstance;
+  let consoleLogSpy: jest.SpyInstance;
 
   beforeEach(async () => {
+    // Mock console output to keep test output clean
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     projectTempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'journal-http-test-'));
     userTempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'journal-user-http-test-'));
     
@@ -72,6 +77,10 @@ describe('Remote Journal HTTP Integration', () => {
   });
 
   afterEach(async () => {
+    // Restore console methods
+    consoleErrorSpy.mockRestore();
+    consoleLogSpy.mockRestore();
+    
     // Restore original HOME
     if (originalHome !== undefined) {
       process.env.HOME = originalHome;

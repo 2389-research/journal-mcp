@@ -5,6 +5,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { EmbeddingService, EmbeddingData } from './embeddings';
 import { resolveUserJournalPath, resolveProjectJournalPath } from './paths';
+import { RemoteConfig, RemoteSearchRequest, RemoteSearchResponse, searchRemoteServer, getRemoteEntries } from './remote';
 
 export interface SearchResult {
   path: string;
@@ -31,11 +32,13 @@ export class SearchService {
   private embeddingService: EmbeddingService;
   private projectPath: string;
   private userPath: string;
+  private remoteConfig?: RemoteConfig;
 
-  constructor(projectPath?: string, userPath?: string, embeddingModel?: string) {
+  constructor(projectPath?: string, userPath?: string, embeddingModel?: string, remoteConfig?: RemoteConfig) {
     this.embeddingService = EmbeddingService.getInstance(embeddingModel);
     this.projectPath = projectPath || resolveProjectJournalPath();
     this.userPath = userPath || resolveUserJournalPath();
+    this.remoteConfig = remoteConfig;
   }
 
   async search(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
@@ -46,6 +49,11 @@ export class SearchService {
       dateRange,
       type = 'both'
     } = options;
+
+    // Use remote search if in remote-only mode
+    if (this.remoteConfig?.remoteOnly) {
+      return this.searchRemote(query, options);
+    }
 
     // Generate query embedding
     const queryEmbedding = await this.embeddingService.generateEmbedding(query);
@@ -115,6 +123,11 @@ export class SearchService {
       dateRange
     } = options;
 
+    // Use remote listing if in remote-only mode
+    if (this.remoteConfig?.remoteOnly) {
+      return this.listRecentRemote(options);
+    }
+
     const allEmbeddings: Array<EmbeddingData & { type: 'project' | 'user' }> = [];
 
     if (type === 'both' || type === 'project') {
@@ -153,6 +166,11 @@ export class SearchService {
   }
 
   async readEntry(filePath: string): Promise<string | null> {
+    // In remote-only mode, can't read local files
+    if (this.remoteConfig?.remoteOnly) {
+      throw new Error('Cannot read local files in remote-only mode. Use search to find entry content.');
+    }
+
     try {
       return await fs.readFile(filePath, 'utf8');
     } catch (error) {
@@ -161,6 +179,110 @@ export class SearchService {
       }
       throw error;
     }
+  }
+
+  private async searchRemote(query: string, options: SearchOptions): Promise<SearchResult[]> {
+    if (!this.remoteConfig) {
+      throw new Error('Remote configuration not available');
+    }
+
+    const {
+      limit = 10,
+      minScore = 0.1,
+      sections,
+      dateRange
+    } = options;
+
+    const searchRequest: RemoteSearchRequest = {
+      query,
+      limit,
+      similarity_threshold: minScore
+    };
+
+    if (sections && sections.length > 0) {
+      searchRequest.sections = sections;
+    }
+
+    if (dateRange) {
+      if (dateRange.start) {
+        searchRequest.date_from = dateRange.start.toISOString();
+      }
+      if (dateRange.end) {
+        searchRequest.date_to = dateRange.end.toISOString();
+      }
+    }
+
+    try {
+      const response = await searchRemoteServer(this.remoteConfig, searchRequest);
+      
+      return response.results.map(result => ({
+        path: result.id, // Use remote ID as path
+        score: result.similarity_score,
+        text: this.extractTextFromRemoteResult(result),
+        sections: result.matched_sections || [],
+        timestamp: result.timestamp,
+        excerpt: this.generateExcerpt(this.extractTextFromRemoteResult(result), query),
+        type: 'project' as const // Remote entries don't distinguish project/user
+      }));
+    } catch (error) {
+      console.error('Remote search failed:', error);
+      throw new Error(`Remote search failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  private async listRecentRemote(options: SearchOptions): Promise<SearchResult[]> {
+    if (!this.remoteConfig) {
+      throw new Error('Remote configuration not available');
+    }
+
+    const { limit = 10 } = options;
+
+    try {
+      const response = await getRemoteEntries(this.remoteConfig, limit);
+      
+      return response.entries.map(entry => ({
+        path: entry.id, // Use remote ID as path
+        score: 1, // No similarity score for listing
+        text: this.extractTextFromRemoteResult(entry),
+        sections: this.extractSectionsFromRemoteResult(entry),
+        timestamp: entry.timestamp,
+        excerpt: this.generateExcerpt(this.extractTextFromRemoteResult(entry), '', 150),
+        type: 'project' as const // Remote entries don't distinguish project/user
+      }));
+    } catch (error) {
+      console.error('Remote listing failed:', error);
+      throw new Error(`Remote listing failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  private extractTextFromRemoteResult(result: any): string {
+    if (result.content) {
+      return result.content;
+    }
+
+    if (result.sections) {
+      const sections = [];
+      if (result.sections.feelings) sections.push(`## Feelings\n\n${result.sections.feelings}`);
+      if (result.sections.project_notes) sections.push(`## Project Notes\n\n${result.sections.project_notes}`);
+      if (result.sections.user_context) sections.push(`## User Context\n\n${result.sections.user_context}`);
+      if (result.sections.technical_insights) sections.push(`## Technical Insights\n\n${result.sections.technical_insights}`);
+      if (result.sections.world_knowledge) sections.push(`## World Knowledge\n\n${result.sections.world_knowledge}`);
+      return sections.join('\n\n');
+    }
+
+    return '';
+  }
+
+  private extractSectionsFromRemoteResult(result: any): string[] {
+    const sections = [];
+    if (result.sections) {
+      if (result.sections.feelings) sections.push('Feelings');
+      if (result.sections.project_notes) sections.push('Project Notes');
+      if (result.sections.user_context) sections.push('User Context');
+      if (result.sections.technical_insights) sections.push('Technical Insights');
+      if (result.sections.world_knowledge) sections.push('World Knowledge');
+    }
+    return sections;
   }
 
   private async loadEmbeddingsFromPath(
