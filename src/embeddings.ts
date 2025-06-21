@@ -1,9 +1,8 @@
 // ABOUTME: Local embedding service using transformers for semantic journal search
 // ABOUTME: Provides text embedding generation and similarity computation utilities
 
-import { pipeline, FeatureExtractionPipeline } from '@xenova/transformers';
-import * as fs from 'fs/promises';
-import * as path from 'path';
+import * as fs from 'node:fs/promises';
+import { type FeatureExtractionPipeline, pipeline } from '@xenova/transformers';
 
 export interface EmbeddingData {
   embedding: number[];
@@ -125,7 +124,7 @@ export class EmbeddingService {
     const sections: string[] = [];
     const sectionMatches = withoutFrontmatter.match(/^## (.+)$/gm);
     if (sectionMatches) {
-      sections.push(...sectionMatches.map(match => match.replace('## ', '')));
+      sections.push(...sectionMatches.map((match) => match.replace('## ', '')));
     }
 
     // Clean up markdown for embedding
@@ -136,7 +135,7 @@ export class EmbeddingService {
 
     return {
       text: cleanText,
-      sections
+      sections,
     };
   }
 }

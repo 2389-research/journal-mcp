@@ -1,11 +1,11 @@
 // ABOUTME: Tests for remote journal posting with mock HTTP validation
 // ABOUTME: Validates real HTTP request structure, headers, and payloads
 
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import * as os from 'os';
+import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { JournalManager } from '../src/journal';
-import { RemoteConfig } from '../src/remote';
+import type { RemoteConfig } from '../src/remote';
 
 // Mock node-fetch but capture the actual HTTP calls
 jest.mock('node-fetch', () => jest.fn());
@@ -53,7 +53,7 @@ describe('Remote Journal HTTP Integration', () => {
           status: 403,
           statusText: 'Forbidden',
           text: jest.fn().mockResolvedValue('Forbidden'),
-          json: jest.fn().mockResolvedValue({})
+          json: jest.fn().mockResolvedValue({}),
         });
       }
 
@@ -63,7 +63,7 @@ describe('Remote Journal HTTP Integration', () => {
           status: 500,
           statusText: 'Internal Server Error',
           text: jest.fn().mockResolvedValue('Server Error'),
-          json: jest.fn().mockResolvedValue({})
+          json: jest.fn().mockResolvedValue({}),
         });
       }
 
@@ -77,7 +77,7 @@ describe('Remote Journal HTTP Integration', () => {
         status: 200,
         statusText: 'OK',
         text: jest.fn().mockResolvedValue('Success'),
-        json: jest.fn().mockResolvedValue({})
+        json: jest.fn().mockResolvedValue({}),
       });
     });
   });
@@ -106,7 +106,7 @@ describe('Remote Journal HTTP Integration', () => {
       serverUrl: 'https://api.test.com',
       teamId: 'test-team',
       apiKey: 'test-api-key',
-      enabled: true
+      enabled: true,
     };
 
     journalManager = new JournalManager(projectTempDir, undefined, remoteConfig);
@@ -114,7 +114,7 @@ describe('Remote Journal HTTP Integration', () => {
     await journalManager.writeEntry('Test HTTP request validation');
 
     // Wait for async HTTP request
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(capturedFetchCalls).toHaveLength(1);
 
@@ -130,21 +130,21 @@ describe('Remote Journal HTTP Integration', () => {
       serverUrl: 'https://api.test.com',
       teamId: 'test-team',
       apiKey: 'test-api-key',
-      enabled: true
+      enabled: true,
     };
 
     journalManager = new JournalManager(projectTempDir, undefined, remoteConfig);
 
     await journalManager.writeEntry('Testing payload structure');
 
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     const call = capturedFetchCalls[0];
     expect(call.body).toEqual({
       team_id: 'test-team',
       timestamp: expect.any(Number),
       content: 'Testing payload structure',
-      embedding: expect.any(Array)
+      embedding: expect.any(Array),
     });
 
     // Verify embedding is valid vector
@@ -157,7 +157,7 @@ describe('Remote Journal HTTP Integration', () => {
       serverUrl: 'https://api.test.com',
       teamId: 'test-team',
       apiKey: 'test-api-key',
-      enabled: true
+      enabled: true,
     };
 
     journalManager = new JournalManager(projectTempDir, undefined, remoteConfig);
@@ -165,12 +165,12 @@ describe('Remote Journal HTTP Integration', () => {
     const thoughts = {
       feelings: 'Testing HTTP integration feels great',
       project_notes: 'HTTP validation is working well',
-      technical_insights: 'Mock fetch provides good test coverage'
+      technical_insights: 'Mock fetch provides good test coverage',
     };
 
     await journalManager.writeThoughts(thoughts);
 
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     const call = capturedFetchCalls[0];
     expect(call.body).toEqual({
@@ -181,9 +181,9 @@ describe('Remote Journal HTTP Integration', () => {
         project_notes: 'HTTP validation is working well',
         user_context: undefined,
         technical_insights: 'Mock fetch provides good test coverage',
-        world_knowledge: undefined
+        world_knowledge: undefined,
       },
-      embedding: expect.any(Array)
+      embedding: expect.any(Array),
     });
   });
 
@@ -192,7 +192,7 @@ describe('Remote Journal HTTP Integration', () => {
       serverUrl: 'https://api.test.com',
       teamId: 'test-team',
       apiKey: 'test-api-key',
-      enabled: true
+      enabled: true,
     };
 
     journalManager = new JournalManager(projectTempDir, undefined, remoteConfig);
@@ -201,7 +201,7 @@ describe('Remote Journal HTTP Integration', () => {
     await journalManager.writeEntry('Timestamp precision test');
     const afterTime = Date.now();
 
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     const call = capturedFetchCalls[0];
     expect(call.body.timestamp).toBeGreaterThanOrEqual(beforeTime);
@@ -214,7 +214,7 @@ describe('Remote Journal HTTP Integration', () => {
       serverUrl: 'https://api.test.com',
       teamId: 'test-team',
       apiKey: 'invalid-key', // Triggers 403 response
-      enabled: true
+      enabled: true,
     };
 
     journalManager = new JournalManager(projectTempDir, undefined, remoteConfig);
@@ -222,7 +222,7 @@ describe('Remote Journal HTTP Integration', () => {
     // Should not throw - local journaling continues
     await expect(journalManager.writeEntry('Auth error test')).resolves.not.toThrow();
 
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     // Verify request was attempted
     expect(capturedFetchCalls).toHaveLength(1);
@@ -237,7 +237,7 @@ describe('Remote Journal HTTP Integration', () => {
 
     const dayDir = path.join(projectTempDir, dateString);
     const files = await fs.readdir(dayDir);
-    expect(files.some(f => f.endsWith('.md'))).toBe(true);
+    expect(files.some((f) => f.endsWith('.md'))).toBe(true);
   });
 
   test('handles HTTP 500 server errors gracefully', async () => {
@@ -245,7 +245,7 @@ describe('Remote Journal HTTP Integration', () => {
       serverUrl: 'https://api.test.com',
       teamId: 'error-team', // Triggers 500 response
       apiKey: 'test-api-key',
-      enabled: true
+      enabled: true,
     };
 
     journalManager = new JournalManager(projectTempDir, undefined, remoteConfig);
@@ -253,7 +253,7 @@ describe('Remote Journal HTTP Integration', () => {
     // Should not throw - local journaling continues
     await expect(journalManager.writeEntry('Server error test')).resolves.not.toThrow();
 
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     // Verify request was attempted
     expect(capturedFetchCalls).toHaveLength(1);
@@ -266,7 +266,7 @@ describe('Remote Journal HTTP Integration', () => {
       serverUrl: 'https://unreachable.test.com',
       teamId: 'test-team',
       apiKey: 'test-api-key',
-      enabled: true
+      enabled: true,
     };
 
     journalManager = new JournalManager(projectTempDir, undefined, remoteConfig);
@@ -274,7 +274,7 @@ describe('Remote Journal HTTP Integration', () => {
     // Should not throw - local journaling continues
     await expect(journalManager.writeEntry('Connection error test')).resolves.not.toThrow();
 
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     // Verify request was attempted (but failed)
     expect(capturedFetchCalls).toHaveLength(1);
@@ -288,7 +288,7 @@ describe('Remote Journal HTTP Integration', () => {
 
     const dayDir = path.join(projectTempDir, dateString);
     const files = await fs.readdir(dayDir);
-    expect(files.some(f => f.endsWith('.md'))).toBe(true);
+    expect(files.some((f) => f.endsWith('.md'))).toBe(true);
   });
 
   test('validates request body is properly JSON serialized', async () => {
@@ -296,14 +296,14 @@ describe('Remote Journal HTTP Integration', () => {
       serverUrl: 'https://api.test.com',
       teamId: 'test-team',
       apiKey: 'test-api-key',
-      enabled: true
+      enabled: true,
     };
 
     journalManager = new JournalManager(projectTempDir, undefined, remoteConfig);
 
     await journalManager.writeEntry('JSON serialization test');
 
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     const call = capturedFetchCalls[0];
 
@@ -323,14 +323,14 @@ describe('Remote Journal HTTP Integration', () => {
       serverUrl: 'https://api.test.com',
       teamId: 'test-team',
       apiKey: 'test-api-key',
-      enabled: true
+      enabled: true,
     };
 
     journalManager = new JournalManager(projectTempDir, undefined, remoteConfig);
 
     await journalManager.writeEntry('Header validation test');
 
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     const call = capturedFetchCalls[0];
     const headers = call.options.headers;

@@ -1,7 +1,14 @@
 // ABOUTME: Tests for remote journal posting functionality
 // ABOUTME: Validates HTTP requests, error handling, and configuration parsing
 
-import { postToRemoteServer, createRemoteConfig, RemoteConfig, RemoteJournalPayload, searchRemoteServer, getRemoteEntries } from '../src/remote';
+import {
+  createRemoteConfig,
+  getRemoteEntries,
+  postToRemoteServer,
+  type RemoteConfig,
+  type RemoteJournalPayload,
+  searchRemoteServer,
+} from '../src/remote';
 
 // Mock node-fetch
 jest.mock('node-fetch', () => jest.fn());
@@ -12,7 +19,7 @@ describe('Remote Journal Posting', () => {
     serverUrl: 'https://api.example.com',
     teamId: 'test-team',
     apiKey: 'test-key',
-    enabled: true
+    enabled: true,
   };
 
   let consoleErrorSpy: jest.SpyInstance;
@@ -43,14 +50,14 @@ describe('Remote Journal Posting', () => {
         status: 200,
         statusText: 'OK',
         text: jest.fn().mockResolvedValue('Success'),
-        json: jest.fn().mockResolvedValue({})
+        json: jest.fn().mockResolvedValue({}),
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 
       const payload: RemoteJournalPayload = {
         team_id: 'test-team',
         timestamp: Date.now(),
-        content: 'Test journal entry'
+        content: 'Test journal entry',
       };
 
       await postToRemoteServer(mockConfig, payload);
@@ -61,9 +68,9 @@ describe('Remote Journal Posting', () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-API-Key': 'test-key'
+            'X-API-Key': 'test-key',
           },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         }
       );
     });
@@ -74,7 +81,7 @@ describe('Remote Journal Posting', () => {
         status: 200,
         statusText: 'OK',
         text: jest.fn().mockResolvedValue('Success'),
-        json: jest.fn().mockResolvedValue({})
+        json: jest.fn().mockResolvedValue({}),
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 
@@ -83,8 +90,8 @@ describe('Remote Journal Posting', () => {
         timestamp: Date.now(),
         sections: {
           feelings: 'I feel good',
-          project_notes: 'Code is working well'
-        }
+          project_notes: 'Code is working well',
+        },
       };
 
       await postToRemoteServer(mockConfig, payload);
@@ -92,7 +99,7 @@ describe('Remote Journal Posting', () => {
       expect(mockFetch).toHaveBeenCalledWith(
         'https://api.example.com/teams/test-team/journal/entries',
         expect.objectContaining({
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         })
       );
     });
@@ -103,7 +110,7 @@ describe('Remote Journal Posting', () => {
         status: 200,
         statusText: 'OK',
         text: jest.fn().mockResolvedValue('Success'),
-        json: jest.fn().mockResolvedValue({})
+        json: jest.fn().mockResolvedValue({}),
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 
@@ -111,7 +118,7 @@ describe('Remote Journal Posting', () => {
         team_id: 'test-team',
         timestamp: Date.now(),
         content: 'Test content with embedding',
-        embedding: [0.1, 0.2, 0.3, 0.4, 0.5]
+        embedding: [0.1, 0.2, 0.3, 0.4, 0.5],
       };
 
       await postToRemoteServer(mockConfig, payload);
@@ -122,9 +129,9 @@ describe('Remote Journal Posting', () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-API-Key': 'test-key'
+            'X-API-Key': 'test-key',
           },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         })
       );
 
@@ -137,13 +144,13 @@ describe('Remote Journal Posting', () => {
     it('should skip posting when config is disabled', async () => {
       const disabledConfig: RemoteConfig = {
         ...mockConfig,
-        enabled: false
+        enabled: false,
       };
 
       const payload: RemoteJournalPayload = {
         team_id: 'test-team',
         timestamp: Date.now(),
-        content: 'Test entry'
+        content: 'Test entry',
       };
 
       await postToRemoteServer(disabledConfig, payload);
@@ -157,14 +164,14 @@ describe('Remote Journal Posting', () => {
         status: 500,
         statusText: 'Internal Server Error',
         text: jest.fn().mockResolvedValue('Server Error'),
-        json: jest.fn().mockResolvedValue({})
+        json: jest.fn().mockResolvedValue({}),
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 
       const payload: RemoteJournalPayload = {
         team_id: 'test-team',
         timestamp: Date.now(),
-        content: 'Test entry'
+        content: 'Test entry',
       };
 
       await expect(postToRemoteServer(mockConfig, payload)).rejects.toThrow(
@@ -178,12 +185,10 @@ describe('Remote Journal Posting', () => {
       const payload: RemoteJournalPayload = {
         team_id: 'test-team',
         timestamp: Date.now(),
-        content: 'Test entry'
+        content: 'Test entry',
       };
 
-      await expect(postToRemoteServer(mockConfig, payload)).rejects.toThrow(
-        'Network error'
-      );
+      await expect(postToRemoteServer(mockConfig, payload)).rejects.toThrow('Network error');
     });
   });
 
@@ -200,7 +205,7 @@ describe('Remote Journal Posting', () => {
         teamId: 'my-team',
         apiKey: 'secret-key',
         enabled: true,
-        remoteOnly: false
+        remoteOnly: false,
       });
     });
 
@@ -231,7 +236,7 @@ describe('Remote Journal Posting', () => {
         teamId: 'my-team',
         apiKey: 'secret-key',
         enabled: true,
-        remoteOnly: true
+        remoteOnly: true,
       });
     });
 
@@ -248,7 +253,7 @@ describe('Remote Journal Posting', () => {
         teamId: 'my-team',
         apiKey: 'secret-key',
         enabled: true,
-        remoteOnly: false
+        remoteOnly: false,
       });
     });
   });
@@ -267,21 +272,21 @@ describe('Remote Journal Posting', () => {
               timestamp: 1717160645123,
               created_at: '2024-05-31T14:30:45.123Z',
               sections: {
-                feelings: 'I feel frustrated with TypeScript'
+                feelings: 'I feel frustrated with TypeScript',
               },
-              matched_sections: ['feelings']
-            }
+              matched_sections: ['feelings'],
+            },
           ],
           total_count: 1,
-          query_embedding: [0.1, 0.2, 0.3]
-        })
+          query_embedding: [0.1, 0.2, 0.3],
+        }),
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 
       const searchRequest = {
         query: 'frustrated TypeScript',
         limit: 10,
-        similarity_threshold: 0.7
+        similarity_threshold: 0.7,
       };
 
       const result = await searchRemoteServer(mockConfig, searchRequest);
@@ -292,9 +297,9 @@ describe('Remote Journal Posting', () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-API-Key': 'test-key'
+            'X-API-Key': 'test-key',
           },
-          body: JSON.stringify(searchRequest)
+          body: JSON.stringify(searchRequest),
         }
       );
 
@@ -306,7 +311,7 @@ describe('Remote Journal Posting', () => {
     it('should throw error when config is disabled', async () => {
       const disabledConfig: RemoteConfig = {
         ...mockConfig,
-        enabled: false
+        enabled: false,
       };
 
       await expect(searchRemoteServer(disabledConfig, { query: 'test' })).rejects.toThrow(
@@ -320,7 +325,7 @@ describe('Remote Journal Posting', () => {
         status: 500,
         statusText: 'Internal Server Error',
         text: jest.fn().mockResolvedValue('Server Error'),
-        json: jest.fn().mockResolvedValue({})
+        json: jest.fn().mockResolvedValue({}),
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 
@@ -342,7 +347,7 @@ describe('Remote Journal Posting', () => {
               team_id: 'test-team',
               timestamp: 1717160645123,
               created_at: '2024-05-31T14:30:45.123Z',
-              content: 'Recent journal entry'
+              content: 'Recent journal entry',
             },
             {
               id: 'entry_456',
@@ -350,12 +355,12 @@ describe('Remote Journal Posting', () => {
               timestamp: 1717160644000,
               created_at: '2024-05-31T14:30:44.000Z',
               sections: {
-                project_notes: 'Working on new feature'
-              }
-            }
+                project_notes: 'Working on new feature',
+              },
+            },
           ],
-          total_count: 2
-        })
+          total_count: 2,
+        }),
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 
@@ -366,8 +371,8 @@ describe('Remote Journal Posting', () => {
         {
           method: 'GET',
           headers: {
-            'X-API-Key': 'test-key'
-          }
+            'X-API-Key': 'test-key',
+          },
         }
       );
 
@@ -382,8 +387,8 @@ describe('Remote Journal Posting', () => {
         status: 200,
         json: jest.fn().mockResolvedValue({
           entries: [],
-          total_count: 0
-        })
+          total_count: 0,
+        }),
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 
@@ -392,7 +397,7 @@ describe('Remote Journal Posting', () => {
       expect(mockFetch).toHaveBeenCalledWith(
         'https://api.example.com/teams/test-team/journal/entries?',
         expect.objectContaining({
-          method: 'GET'
+          method: 'GET',
         })
       );
     });
@@ -400,7 +405,7 @@ describe('Remote Journal Posting', () => {
     it('should throw error when config is disabled', async () => {
       const disabledConfig: RemoteConfig = {
         ...mockConfig,
-        enabled: false
+        enabled: false,
       };
 
       await expect(getRemoteEntries(disabledConfig)).rejects.toThrow(
@@ -414,7 +419,7 @@ describe('Remote Journal Posting', () => {
         status: 404,
         statusText: 'Not Found',
         text: jest.fn().mockResolvedValue('Not Found'),
-        json: jest.fn().mockResolvedValue({})
+        json: jest.fn().mockResolvedValue({}),
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 

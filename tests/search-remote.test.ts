@@ -1,11 +1,11 @@
 // ABOUTME: Tests for search service with remote server integration
 // ABOUTME: Validates search behavior in hybrid and remote-only modes
 
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import * as os from 'os';
+import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import type { RemoteConfig } from '../src/remote';
 import { SearchService } from '../src/search';
-import { RemoteConfig } from '../src/remote';
 
 // Mock node-fetch
 jest.mock('node-fetch', () => jest.fn());
@@ -19,10 +19,10 @@ jest.mock('../src/embeddings', () => ({
       cosineSimilarity: jest.fn().mockReturnValue(0.8),
       extractSearchableText: jest.fn().mockReturnValue({
         text: 'extracted text',
-        sections: ['Feelings']
-      })
-    })
-  }
+        sections: ['Feelings'],
+      }),
+    }),
+  },
 }));
 
 describe('SearchService with Remote Integration', () => {
@@ -43,7 +43,7 @@ describe('SearchService with Remote Integration', () => {
       teamId: 'test-team',
       apiKey: 'test-key',
       enabled: true,
-      remoteOnly: false
+      remoteOnly: false,
     };
 
     remoteOnlyConfig = {
@@ -51,7 +51,7 @@ describe('SearchService with Remote Integration', () => {
       teamId: 'test-team',
       apiKey: 'test-key',
       enabled: true,
-      remoteOnly: true
+      remoteOnly: true,
     };
 
     hybridSearchService = new SearchService(tempDir, undefined, undefined, hybridConfig);
@@ -92,7 +92,7 @@ I feel frustrated with TypeScript today`;
         text: 'I feel frustrated with TypeScript today',
         sections: ['Feelings'],
         timestamp: 1717160645123,
-        path: entryPath
+        path: entryPath,
       };
       const embeddingPath = path.join(dayDir, '14-30-45-123456.embedding');
       await fs.writeFile(embeddingPath, JSON.stringify(embeddingData));
@@ -104,7 +104,7 @@ I feel frustrated with TypeScript today`;
       // The mock returns 10 default results, so we should get multiple results
       expect(results.length).toBeGreaterThan(0);
       // Check that at least one result contains our text
-      expect(results.some(r => r.text.includes('frustrated with TypeScript'))).toBe(true);
+      expect(results.some((r) => r.text.includes('frustrated with TypeScript'))).toBe(true);
     });
   });
 
@@ -122,14 +122,14 @@ I feel frustrated with TypeScript today`;
               timestamp: 1717160645123,
               created_at: '2024-05-31T14:30:45.123Z',
               sections: {
-                feelings: 'I feel frustrated with TypeScript'
+                feelings: 'I feel frustrated with TypeScript',
               },
-              matched_sections: ['feelings']
-            }
+              matched_sections: ['feelings'],
+            },
           ],
           total_count: 1,
-          query_embedding: [0.1, 0.2, 0.3]
-        })
+          query_embedding: [0.1, 0.2, 0.3],
+        }),
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 
@@ -141,9 +141,9 @@ I feel frustrated with TypeScript today`;
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-API-Key': 'test-key'
+            'X-API-Key': 'test-key',
           },
-          body: expect.stringContaining('"query":"frustrated TypeScript"')
+          body: expect.stringContaining('"query":"frustrated TypeScript"'),
         })
       );
 
@@ -159,8 +159,8 @@ I feel frustrated with TypeScript today`;
         status: 200,
         json: jest.fn().mockResolvedValue({
           results: [],
-          total_count: 0
-        })
+          total_count: 0,
+        }),
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 
@@ -170,8 +170,8 @@ I feel frustrated with TypeScript today`;
         sections: ['feelings', 'project_notes'],
         dateRange: {
           start: new Date('2024-01-01'),
-          end: new Date('2024-12-31')
-        }
+          end: new Date('2024-12-31'),
+        },
       });
 
       const requestBody = JSON.parse(mockFetch.mock.calls[0][1].body);
@@ -181,7 +181,7 @@ I feel frustrated with TypeScript today`;
         similarity_threshold: 0.8,
         sections: ['feelings', 'project_notes'],
         date_from: '2024-01-01T00:00:00.000Z',
-        date_to: '2024-12-31T00:00:00.000Z'
+        date_to: '2024-12-31T00:00:00.000Z',
       });
     });
 
@@ -196,11 +196,11 @@ I feel frustrated with TypeScript today`;
               team_id: 'test-team',
               timestamp: 1717160644000,
               created_at: '2024-05-31T14:30:44.000Z',
-              content: 'Recent entry content'
-            }
+              content: 'Recent entry content',
+            },
           ],
-          total_count: 1
-        })
+          total_count: 1,
+        }),
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 
@@ -211,8 +211,8 @@ I feel frustrated with TypeScript today`;
         expect.objectContaining({
           method: 'GET',
           headers: {
-            'X-API-Key': 'test-key'
-          }
+            'X-API-Key': 'test-key',
+          },
         })
       );
 
@@ -233,7 +233,7 @@ I feel frustrated with TypeScript today`;
         status: 500,
         statusText: 'Internal Server Error',
         text: jest.fn().mockResolvedValue('Server Error'),
-        json: jest.fn().mockResolvedValue({})
+        json: jest.fn().mockResolvedValue({}),
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 
@@ -247,7 +247,7 @@ I feel frustrated with TypeScript today`;
         ok: false,
         status: 404,
         statusText: 'Not Found',
-        text: jest.fn().mockResolvedValue('Not Found')
+        text: jest.fn().mockResolvedValue('Not Found'),
       };
       mockFetch.mockResolvedValue(mockResponse as any);
 
@@ -274,7 +274,7 @@ I feel frustrated with TypeScript today`;
       const mockResponse = {
         ok: true,
         status: 200,
-        json: jest.fn()
+        json: jest.fn(),
       };
       mockFetch.mockResolvedValue(mockResponse as any);
     });
@@ -291,11 +291,11 @@ I feel frustrated with TypeScript today`;
               similarity_score: 0.9,
               timestamp: 1717160645123,
               created_at: '2024-05-31T14:30:45.123Z',
-              content: 'This is a simple content entry'
-            }
+              content: 'This is a simple content entry',
+            },
           ],
-          total_count: 1
-        })
+          total_count: 1,
+        }),
       });
 
       const results = await remoteOnlySearchService.search('simple content');
@@ -318,13 +318,13 @@ I feel frustrated with TypeScript today`;
               sections: {
                 feelings: 'I feel excited',
                 project_notes: 'Working on new feature',
-                technical_insights: 'TypeScript is great'
+                technical_insights: 'TypeScript is great',
               },
-              matched_sections: ['feelings', 'technical_insights']
-            }
+              matched_sections: ['feelings', 'technical_insights'],
+            },
           ],
-          total_count: 1
-        })
+          total_count: 1,
+        }),
       });
 
       const results = await remoteOnlySearchService.search('excited feature');
@@ -348,12 +348,12 @@ I feel frustrated with TypeScript today`;
               created_at: '2024-05-31T14:30:45.123Z',
               sections: {
                 user_context: 'Harper likes concise responses',
-                world_knowledge: 'AI is advancing rapidly'
-              }
-            }
+                world_knowledge: 'AI is advancing rapidly',
+              },
+            },
           ],
-          total_count: 1
-        })
+          total_count: 1,
+        }),
       });
 
       const results = await remoteOnlySearchService.listRecent();
@@ -372,11 +372,11 @@ I feel frustrated with TypeScript today`;
               team_id: 'test-team',
               similarity_score: 0.1,
               timestamp: 1717160645123,
-              created_at: '2024-05-31T14:30:45.123Z'
-            }
+              created_at: '2024-05-31T14:30:45.123Z',
+            },
           ],
-          total_count: 1
-        })
+          total_count: 1,
+        }),
       });
 
       const results = await remoteOnlySearchService.search('empty');
