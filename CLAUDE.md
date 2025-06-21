@@ -56,20 +56,33 @@ This is an MCP (Model Context Protocol) server that provides Claude with private
 
 ## MCP Integration Details
 
-The server provides comprehensive journaling and search capabilities through these tools:
+The server provides comprehensive journaling and search capabilities through these MCP features:
 
-**Core Journaling:**
+**Core Journaling Tools:**
 - `process_thoughts` - Multi-section private journaling with categories for feelings, project notes, user context, technical insights, and world knowledge
 
-**Search & Retrieval:**
+**Search & Retrieval Tools:**
 - `search_journal` - Natural language semantic search across all journal entries using local AI embeddings
-- `read_journal_entry` - Read full content of specific entries by file path
+- `read_journal_entry` - Read full content of specific entries by file path (with security validation)
 - `list_recent_entries` - Browse recent entries chronologically with date filtering
 
+**MCP Resources:**
+- Journal entries exposed as discoverable resources with secure URI scheme (`journal://project/...` or `journal://user/...`)
+- Resources provide metadata including entry date, type, sections, and content excerpts
+- Secure base64url encoding prevents path traversal attacks
+
+**MCP Prompts:**
+- `daily_reflection` - Structured daily reflection with optional focus area
+- `project_retrospective` - Project-specific retrospective prompt with optional project name
+- `learning_capture` - Learning documentation prompt with optional topic focus
+- `emotional_processing` - Safe space prompt for emotional processing and self-care
+
 **Key Features:**
+- **Full MCP 0.4.0 Compliance**: Implements tools, resources, and prompts for comprehensive MCP integration
 - **Dual Storage**: Project notes stored locally with codebase, personal thoughts in user's home directory
 - **Local AI Search**: Uses @xenova/transformers for semantic understanding without external API calls
 - **Automatic Indexing**: Embeddings generated automatically for all entries on first startup and ongoing writes
+- **Security First**: Input validation, path sanitization, and secure URI encoding prevent attacks
 - **Privacy First**: All processing happens locally, no data leaves your machine
 
 ## Testing Approach

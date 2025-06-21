@@ -1,11 +1,16 @@
-// ABOUTME: MCP server implementation with process_feelings tool
-// ABOUTME: Handles stdio protocol communication and tool registration
+// ABOUTME: MCP server implementation with comprehensive journaling capabilities
+// ABOUTME: Handles stdio protocol communication, tools, resources, and prompts
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import * as path from 'path';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
+  ListPromptsRequestSchema,
+  GetPromptRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { JournalManager } from './journal';
 import { ProcessFeelingsRequest, ProcessThoughtsRequest } from './types';
@@ -26,7 +31,7 @@ export class PrivateJournalServer {
     this.server = new Server(
       {
         name: 'private-journal-mcp',
-        version: '1.1.0',
+        version: '1.2.0',
       }
     );
 
@@ -243,6 +248,11 @@ export class PrivateJournalServer {
           throw new Error('path is required and must be a string');
         }
 
+        // Security: Validate file path to prevent traversal attacks
+        if (!this.isPathSafe(args.path)) {
+          throw new Error('Access denied: Invalid file path');
+        }
+
         try {
           const content = await this.searchService.readEntry(args.path);
           if (content === null) {
@@ -301,6 +311,285 @@ export class PrivateJournalServer {
 
       throw new Error(`Unknown tool: ${request.params.name}`);
     });
+
+    // Resources support - expose journal entries as discoverable resources
+    this.server.setRequestHandler(ListResourcesRequestSchema, async () => {
+      try {
+        const resources = await this.getJournalResources();
+        return { resources };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        throw new Error(`Failed to list resources: ${errorMessage}`);
+      }
+    });
+
+    this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+      try {
+        const uri = request.params.uri;
+        if (!this.isValidJournalUri(uri)) {
+          throw new Error(`Invalid journal URI: ${uri}`);
+        }
+        
+        const content = await this.readJournalResource(uri);
+        return {
+          contents: [
+            {
+              uri: uri,
+              mimeType: 'text/markdown',
+              text: content,
+            },
+          ],
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        throw new Error(`Failed to read resource: ${errorMessage}`);
+      }
+    });
+
+    // Prompts support - provide journaling prompt templates
+    this.server.setRequestHandler(ListPromptsRequestSchema, async () => ({
+      prompts: [
+        {
+          name: 'daily_reflection',
+          description: 'A structured prompt for daily reflection and journaling',
+          arguments: [
+            {
+              name: 'focus_area',
+              description: 'Optional focus area for the reflection (e.g., "work", "relationships", "learning")',
+              required: false,
+            },
+          ],
+        },
+        {
+          name: 'project_retrospective',
+          description: 'A prompt for reflecting on project work and technical insights',
+          arguments: [
+            {
+              name: 'project_name',
+              description: 'Name of the project being reflected upon',
+              required: false,
+            },
+          ],
+        },
+        {
+          name: 'learning_capture',
+          description: 'A prompt for capturing technical insights and world knowledge',
+          arguments: [
+            {
+              name: 'topic',
+              description: 'The topic or area of learning to focus on',
+              required: false,
+            },
+          ],
+        },
+        {
+          name: 'emotional_processing',
+          description: 'A safe space prompt for processing feelings and emotions',
+          arguments: [],
+        },
+      ],
+    }));
+
+    this.server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+      const promptName = request.params.name;
+      const args = request.params.arguments || {};
+      
+      try {
+        const prompt = this.generatePrompt(promptName, args);
+        return {
+          description: prompt.description,
+          messages: [
+            {
+              role: 'user',
+              content: {
+                type: 'text',
+                text: prompt.content,
+              },
+            },
+          ],
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        throw new Error(`Failed to generate prompt: ${errorMessage}`);
+      }
+    });
+  }
+
+  private async getJournalResources(): Promise<Array<{ uri: string; name: string; description: string; mimeType: string }>> {
+    const resources = [];
+    
+    try {
+      // Get recent entries to expose as resources
+      const recentEntries = await this.searchService.listRecent({ limit: 50 });
+      
+      for (const entry of recentEntries) {
+        const uri = this.createJournalUri(entry.path, entry.type);
+        const date = new Date(entry.timestamp).toLocaleDateString();
+        const sections = entry.sections.join(', ');
+        
+        resources.push({
+          uri,
+          name: `Journal Entry - ${date} (${entry.type})`,
+          description: `${sections}: ${entry.excerpt}`,
+          mimeType: 'text/markdown',
+        });
+      }
+    } catch (error) {
+      console.error('Error getting journal resources:', error);
+    }
+    
+    return resources;
+  }
+
+  private createJournalUri(filePath: string, type: 'project' | 'user'): string {
+    // Create a safe URI format: journal://[type]/[encoded-path]
+    const encodedPath = Buffer.from(filePath).toString('base64url');
+    return `journal://${type}/${encodedPath}`;
+  }
+
+  private isValidJournalUri(uri: string): boolean {
+    // Validate journal URI format and prevent path traversal
+    const pattern = /^journal:\/\/(project|user)\/[A-Za-z0-9_-]+$/;
+    return pattern.test(uri);
+  }
+
+  private async readJournalResource(uri: string): Promise<string> {
+    try {
+      // Parse the URI to extract file path
+      const match = uri.match(/^journal:\/\/(project|user)\/(.+)$/);
+      if (!match) {
+        throw new Error('Invalid journal URI format');
+      }
+      
+      const [, type, encodedPath] = match;
+      const filePath = Buffer.from(encodedPath, 'base64url').toString();
+      
+      // Security: Validate that the path is within allowed directories
+      if (!this.isPathSafe(filePath)) {
+        throw new Error('Access denied: Path outside allowed directories');
+      }
+      
+      const content = await this.searchService.readEntry(filePath);
+      if (content === null) {
+        throw new Error('Journal entry not found');
+      }
+      
+      return content;
+    } catch (error) {
+      console.error('Error reading journal resource:', error);
+      throw error;
+    }
+  }
+
+  private isPathSafe(filePath: string): boolean {
+    // Security: Ensure path doesn't contain traversal attempts
+    const normalizedPath = path.normalize(filePath);
+    return !normalizedPath.includes('..') && path.isAbsolute(normalizedPath);
+  }
+
+  private generatePrompt(promptName: string, args: Record<string, any>): { description: string; content: string } {
+    switch (promptName) {
+      case 'daily_reflection':
+        return {
+          description: 'A structured daily reflection prompt',
+          content: this.generateDailyReflectionPrompt(args.focus_area),
+        };
+      case 'project_retrospective':
+        return {
+          description: 'A project retrospective prompt',
+          content: this.generateProjectRetrospectivePrompt(args.project_name),
+        };
+      case 'learning_capture':
+        return {
+          description: 'A learning capture prompt',
+          content: this.generateLearningCapturePrompt(args.topic),
+        };
+      case 'emotional_processing':
+        return {
+          description: 'An emotional processing prompt',
+          content: this.generateEmotionalProcessingPrompt(),
+        };
+      default:
+        throw new Error(`Unknown prompt: ${promptName}`);
+    }
+  }
+
+  private generateDailyReflectionPrompt(focusArea?: string): string {
+    const focus = focusArea ? ` with a focus on ${focusArea}` : '';
+    return `Take a moment for daily reflection${focus}. Consider using the process_thoughts tool to capture:
+
+**Feelings**: How are you feeling right now? What emotions came up today? Be completely honest with yourself.
+
+**Project Notes**: What did you learn about your current work? Any technical breakthroughs, challenges, or patterns worth noting?
+
+**User Context**: Any insights about your collaborators or users? Communication that worked well or areas for improvement?
+
+**Technical Insights**: Broader technical learnings that extend beyond today's specific work?
+
+**World Knowledge**: Anything interesting you learned about the world, systems, or how things work?
+
+Remember: This is your private space. Write freely and honestly.`;
+  }
+
+  private generateProjectRetrospectivePrompt(projectName?: string): string {
+    const project = projectName ? ` for ${projectName}` : '';
+    return `Time for a project retrospective${project}. Use the process_thoughts tool to reflect on:
+
+**Project Notes**: 
+- What went well in this project phase?
+- What challenges did you encounter?
+- What would you do differently?
+- What architectural or design decisions paid off?
+
+**Technical Insights**:
+- What new techniques or patterns did you discover?
+- What tools or approaches were most effective?
+- What would you want to remember for future projects?
+
+**Feelings**:
+- How do you feel about the project's progress?
+- Any frustrations or satisfactions worth noting?
+
+Take your time and be thorough - future you will thank you for these insights.`;
+  }
+
+  private generateLearningCapturePrompt(topic?: string): string {
+    const topicHint = topic ? ` about ${topic}` : '';
+    return `Capture your learning${topicHint}. Use the process_thoughts tool to document:
+
+**Technical Insights**: 
+- What new concepts or techniques did you learn?
+- How do they connect to what you already know?
+- When might you apply this knowledge?
+
+**World Knowledge**:
+- What interesting facts or insights did you discover?
+- How does this change your understanding of the domain?
+- What questions does this raise for future exploration?
+
+**Project Notes** (if applicable):
+- How does this learning apply to your current work?
+- What opportunities does this create?
+
+Focus on capturing the "why" and "how" - the raw understanding while it's fresh in your mind.`;
+  }
+
+  private generateEmotionalProcessingPrompt(): string {
+    return `This is your safe space for emotional processing. Use the process_thoughts tool with the feelings section to:
+
+**Feelings**: 
+- What emotions are you experiencing right now?
+- What triggered these feelings?
+- What do these emotions tell you about what you need or value?
+- How can you honor these feelings while moving forward?
+
+Remember:
+- There are no wrong emotions
+- You don't need to fix or change anything
+- Just acknowledge and understand what you're experiencing
+- This is completely private and confidential
+
+Take as much space as you need. Your emotional well-being matters.`;
   }
 
   async run(): Promise<void> {
