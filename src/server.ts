@@ -6,6 +6,8 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { JournalManager } from './journal';
 import { ProcessFeelingsRequest, ProcessThoughtsRequest } from './types';
@@ -26,7 +28,7 @@ export class PrivateJournalServer {
     this.server = new Server(
       {
         name: 'private-journal-mcp',
-        version: '1.1.0',
+        version: '1.2.0',
       }
     );
 
@@ -41,10 +43,10 @@ export class PrivateJournalServer {
       console.error(`Using custom embedding model: ${embeddingModel}`);
     }
 
-    this.setupToolHandlers();
+    this.setupHandlers();
   }
 
-  private setupToolHandlers(): void {
+  private setupHandlers(): void {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
       tools: [
         {
@@ -301,6 +303,95 @@ export class PrivateJournalServer {
 
       throw new Error(`Unknown tool: ${request.params.name}`);
     });
+
+    // MCP Resources support for journal discovery
+    this.server.setRequestHandler(ListResourcesRequestSchema, async () => {
+      try {
+        // Get recent entries for discovery
+        const options = {
+          limit: 50, // Show up to 50 recent entries
+          type: 'both' as const,
+          dateRange: { start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } // Last 30 days
+        };
+
+        const entries = await this.searchService.listRecent(options);
+        
+        const resources = entries.map(entry => {
+          const safeUri = this.createJournalUri(entry.path, entry.type);
+          const entryDate = new Date(entry.timestamp).toLocaleDateString();
+          
+          return {
+            uri: safeUri,
+            name: `Journal Entry - ${entryDate} (${entry.type})`,
+            description: `${entry.sections.join(', ')}: ${entry.excerpt.substring(0, 100)}...`,
+            mimeType: 'text/markdown'
+          };
+        });
+
+        return { resources };
+      } catch (error) {
+        console.error('Failed to list journal resources:', error);
+        return { resources: [] };
+      }
+    });
+
+    this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+      try {
+        const uri = request.params.uri;
+        const filePath = this.parseJournalUri(uri);
+        
+        if (!filePath) {
+          throw new Error('Invalid journal URI');
+        }
+
+        // Validate the path for security
+        if (filePath.includes('..') || !filePath.includes('.private-journal')) {
+          throw new Error('Access denied: invalid path');
+        }
+
+        const content = await this.searchService.readEntry(filePath);
+        
+        if (content === null) {
+          throw new Error('Journal entry not found');
+        }
+
+        return {
+          contents: [
+            {
+              uri: request.params.uri,
+              mimeType: 'text/markdown',
+              text: content
+            }
+          ]
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        throw new Error(`Failed to read journal resource: ${errorMessage}`);
+      }
+    });
+  }
+
+  private createJournalUri(filePath: string, type: string): string {
+    // Create a secure URI by base64url encoding the file path
+    const encodedPath = Buffer.from(filePath).toString('base64url');
+    return `journal://${type}/${encodedPath}`;
+  }
+
+  private parseJournalUri(uri: string): string | null {
+    try {
+      const match = uri.match(/^journal:\/\/(project|user)\/(.+)$/);
+      if (!match) {
+        return null;
+      }
+
+      const encodedPath = match[2];
+      const decodedPath = Buffer.from(encodedPath, 'base64url').toString('utf-8');
+      
+      return decodedPath;
+    } catch (error) {
+      console.error('Failed to parse journal URI:', error);
+      return null;
+    }
   }
 
   async run(): Promise<void> {
