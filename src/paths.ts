@@ -1,7 +1,7 @@
 // ABOUTME: Path resolution utilities for journal storage locations
 // ABOUTME: Provides cross-platform fallback logic for finding suitable directories
 
-import * as path from 'path';
+import * as path from 'node:path';
 
 /**
  * Resolves the best available directory for journal storage
@@ -9,7 +9,10 @@ import * as path from 'path';
  * @param includeCurrentDirectory - whether to consider current working directory
  * @returns resolved path to journal directory
  */
-export function resolveJournalPath(subdirectory: string = '.private-journal', includeCurrentDirectory: boolean = true): string {
+export function resolveJournalPath(
+  subdirectory: string = '.private-journal',
+  includeCurrentDirectory: boolean = true
+): string {
   const possiblePaths = [];
 
   // Try current working directory only if requested and it's reasonable

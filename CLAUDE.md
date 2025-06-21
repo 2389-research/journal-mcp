@@ -17,6 +17,9 @@ npm run test:watch
 # Development mode with TypeScript watcher
 npm run dev
 
+# Check code with Biome (lint + format)
+npm run check
+
 # Lint the code
 npm run lint
 

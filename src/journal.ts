@@ -1,12 +1,11 @@
 // ABOUTME: Core journal writing functionality for MCP server
 // ABOUTME: Handles file system operations, timestamps, and markdown formatting
 
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { JournalEntry } from './types';
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
+import { type EmbeddingData, EmbeddingService } from './embeddings';
 import { resolveUserJournalPath } from './paths';
-import { EmbeddingService, EmbeddingData } from './embeddings';
-import { RemoteConfig, RemoteJournalPayload, postToRemoteServer } from './remote';
+import { postToRemoteServer, type RemoteConfig, type RemoteJournalPayload } from './remote';
 
 export class JournalManager {
   private projectJournalPath: string;
@@ -75,7 +74,7 @@ export class JournalManager {
       feelings: thoughts.feelings,
       user_context: thoughts.user_context,
       technical_insights: thoughts.technical_insights,
-      world_knowledge: thoughts.world_knowledge
+      world_knowledge: thoughts.world_knowledge,
     };
 
     // Write project notes to project directory
@@ -84,7 +83,7 @@ export class JournalManager {
     }
 
     // Write user thoughts to user directory
-    const hasUserContent = Object.values(userThoughts).some(value => value !== undefined);
+    const hasUserContent = Object.values(userThoughts).some((value) => value !== undefined);
     if (hasUserContent) {
       await this.writeThoughtsToLocation(userThoughts, timestamp, this.userJournalPath);
     }
@@ -104,7 +103,9 @@ export class JournalManager {
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const seconds = String(date.getSeconds()).padStart(2, '0');
-    const microseconds = String(date.getMilliseconds() * 1000 + Math.floor(Math.random() * 1000)).padStart(6, '0');
+    const microseconds = String(
+      date.getMilliseconds() * 1000 + Math.floor(Math.random() * 1000)
+    ).padStart(6, '0');
     return `${hours}-${minutes}-${seconds}-${microseconds}`;
   }
 
@@ -113,12 +114,12 @@ export class JournalManager {
       hour12: true,
       hour: 'numeric',
       minute: '2-digit',
-      second: '2-digit'
+      second: '2-digit',
     });
     const dateDisplay = timestamp.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
 
     return `---
@@ -158,23 +159,26 @@ ${content}
     await this.generateEmbeddingForEntry(filePath, formattedEntry, timestamp);
   }
 
-  private formatThoughts(thoughts: {
-    feelings?: string;
-    project_notes?: string;
-    user_context?: string;
-    technical_insights?: string;
-    world_knowledge?: string;
-  }, timestamp: Date): string {
+  private formatThoughts(
+    thoughts: {
+      feelings?: string;
+      project_notes?: string;
+      user_context?: string;
+      technical_insights?: string;
+      world_knowledge?: string;
+    },
+    timestamp: Date
+  ): string {
     const timeDisplay = timestamp.toLocaleTimeString('en-US', {
       hour12: true,
       hour: 'numeric',
       minute: '2-digit',
-      second: '2-digit'
+      second: '2-digit',
     });
     const dateDisplay = timestamp.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
 
     const sections = [];
@@ -228,7 +232,7 @@ ${sections.join('\n\n')}
         text,
         sections,
         timestamp: timestamp.getTime(),
-        path: filePath
+        path: filePath,
       };
 
       await this.embeddingService.saveEmbedding(filePath, embeddingData);
@@ -255,7 +259,7 @@ ${sections.join('\n\n')}
           }
 
           const files = await fs.readdir(dayPath);
-          const mdFiles = files.filter(file => file.endsWith('.md'));
+          const mdFiles = files.filter((file) => file.endsWith('.md'));
 
           for (const mdFile of mdFiles) {
             const mdPath = path.join(dayPath, mdFile);
@@ -297,18 +301,26 @@ ${sections.join('\n\n')}
     if (!dateMatch) return null;
 
     const [, year, month, day] = dateMatch;
-    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day),
-                   parseInt(hours), parseInt(minutes), parseInt(seconds));
+    return new Date(
+      parseInt(year),
+      parseInt(month) - 1,
+      parseInt(day),
+      parseInt(hours),
+      parseInt(minutes),
+      parseInt(seconds)
+    );
   }
 
   private async ensureDirectoryExists(dirPath: string): Promise<void> {
     try {
       await fs.access(dirPath);
-    } catch (error) {
+    } catch (_error) {
       try {
         await fs.mkdir(dirPath, { recursive: true });
       } catch (mkdirError) {
-        throw new Error(`Failed to create journal directory at ${dirPath}: ${mkdirError instanceof Error ? mkdirError.message : mkdirError}`);
+        throw new Error(
+          `Failed to create journal directory at ${dirPath}: ${mkdirError instanceof Error ? mkdirError.message : mkdirError}`
+        );
       }
     }
   }
@@ -331,7 +343,7 @@ ${sections.join('\n\n')}
     try {
       const payload: RemoteJournalPayload = {
         team_id: this.remoteConfig.teamId,
-        timestamp: timestamp.getTime()
+        timestamp: timestamp.getTime(),
       };
 
       // Generate content for embedding
@@ -346,7 +358,7 @@ ${sections.join('\n\n')}
           project_notes: thoughts.project_notes,
           user_context: thoughts.user_context,
           technical_insights: thoughts.technical_insights,
-          world_knowledge: thoughts.world_knowledge
+          world_knowledge: thoughts.world_knowledge,
         };
 
         // Combine all sections for embedding generation
@@ -354,8 +366,10 @@ ${sections.join('\n\n')}
         if (thoughts.feelings) sections.push(`## Feelings\n\n${thoughts.feelings}`);
         if (thoughts.project_notes) sections.push(`## Project Notes\n\n${thoughts.project_notes}`);
         if (thoughts.user_context) sections.push(`## User Context\n\n${thoughts.user_context}`);
-        if (thoughts.technical_insights) sections.push(`## Technical Insights\n\n${thoughts.technical_insights}`);
-        if (thoughts.world_knowledge) sections.push(`## World Knowledge\n\n${thoughts.world_knowledge}`);
+        if (thoughts.technical_insights)
+          sections.push(`## Technical Insights\n\n${thoughts.technical_insights}`);
+        if (thoughts.world_knowledge)
+          sections.push(`## World Knowledge\n\n${thoughts.world_knowledge}`);
         fullContent = sections.join('\n\n');
       }
 
@@ -375,10 +389,15 @@ ${sections.join('\n\n')}
     } catch (error) {
       // In remote-only mode, rethrow errors since there's no local fallback
       if (this.remoteConfig?.remoteOnly) {
-        throw new Error(`Remote journal posting failed: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(
+          `Remote journal posting failed: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
       // Log but don't rethrow - local journaling should continue in hybrid mode
-      console.error('Remote journal posting failed:', error instanceof Error ? error.message : String(error));
+      console.error(
+        'Remote journal posting failed:',
+        error instanceof Error ? error.message : String(error)
+      );
     }
   }
 }

@@ -1,11 +1,16 @@
 // ABOUTME: Journal search functionality with vector similarity and text matching
 // ABOUTME: Provides unified search across project and user journal entries
 
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { EmbeddingService, EmbeddingData } from './embeddings';
-import { resolveUserJournalPath, resolveProjectJournalPath } from './paths';
-import { RemoteConfig, RemoteSearchRequest, RemoteSearchResponse, searchRemoteServer, getRemoteEntries } from './remote';
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
+import { type EmbeddingData, EmbeddingService } from './embeddings';
+import { resolveProjectJournalPath, resolveUserJournalPath } from './paths';
+import {
+  getRemoteEntries,
+  type RemoteConfig,
+  type RemoteSearchRequest,
+  searchRemoteServer,
+} from './remote';
 
 export interface SearchResult {
   path: string;
@@ -34,7 +39,12 @@ export class SearchService {
   private userPath: string;
   private remoteConfig?: RemoteConfig;
 
-  constructor(projectPath?: string, userPath?: string, embeddingModel?: string, remoteConfig?: RemoteConfig) {
+  constructor(
+    projectPath?: string,
+    userPath?: string,
+    embeddingModel?: string,
+    remoteConfig?: RemoteConfig
+  ) {
     this.embeddingService = EmbeddingService.getInstance(embeddingModel);
     this.projectPath = projectPath || resolveProjectJournalPath();
     this.userPath = userPath || resolveUserJournalPath();
@@ -42,13 +52,7 @@ export class SearchService {
   }
 
   async search(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
-    const {
-      limit = 10,
-      minScore = 0.1,
-      sections,
-      dateRange,
-      type = 'both'
-    } = options;
+    const { limit = 10, minScore = 0.1, sections, dateRange, type = 'both' } = options;
 
     // Use remote search if in remote-only mode
     if (this.remoteConfig?.remoteOnly) {
@@ -72,11 +76,11 @@ export class SearchService {
     }
 
     // Filter by criteria
-    const filtered = allEmbeddings.filter(embedding => {
+    const filtered = allEmbeddings.filter((embedding) => {
       // Filter by sections if specified
       if (sections && sections.length > 0) {
-        const hasMatchingSection = sections.some(section =>
-          embedding.sections.some(embeddingSection =>
+        const hasMatchingSection = sections.some((section) =>
+          embedding.sections.some((embeddingSection) =>
             embeddingSection.toLowerCase().includes(section.toLowerCase())
           )
         );
@@ -95,7 +99,7 @@ export class SearchService {
 
     // Calculate similarities and sort
     const results: SearchResult[] = filtered
-      .map(embedding => {
+      .map((embedding) => {
         const score = this.embeddingService.cosineSimilarity(queryEmbedding, embedding.embedding);
         const excerpt = this.generateExcerpt(embedding.text, query);
 
@@ -106,10 +110,10 @@ export class SearchService {
           sections: embedding.sections,
           timestamp: embedding.timestamp,
           excerpt,
-          type: embedding.type
+          type: embedding.type,
         };
       })
-      .filter(result => result.score >= minScore)
+      .filter((result) => result.score >= minScore)
       .sort((a, b) => b.score - a.score)
       .slice(0, limit);
 
@@ -117,11 +121,7 @@ export class SearchService {
   }
 
   async listRecent(options: SearchOptions = {}): Promise<SearchResult[]> {
-    const {
-      limit = 10,
-      type = 'both',
-      dateRange
-    } = options;
+    const { limit = 10, type = 'both', dateRange } = options;
 
     // Use remote listing if in remote-only mode
     if (this.remoteConfig?.remoteOnly) {
@@ -141,25 +141,27 @@ export class SearchService {
     }
 
     // Filter by date range
-    const filtered = dateRange ? allEmbeddings.filter(embedding => {
-      const entryDate = new Date(embedding.timestamp);
-      if (dateRange.start && entryDate < dateRange.start) return false;
-      if (dateRange.end && entryDate > dateRange.end) return false;
-      return true;
-    }) : allEmbeddings;
+    const filtered = dateRange
+      ? allEmbeddings.filter((embedding) => {
+          const entryDate = new Date(embedding.timestamp);
+          if (dateRange.start && entryDate < dateRange.start) return false;
+          if (dateRange.end && entryDate > dateRange.end) return false;
+          return true;
+        })
+      : allEmbeddings;
 
     // Sort by timestamp (most recent first) and limit
     const results: SearchResult[] = filtered
       .sort((a, b) => b.timestamp - a.timestamp)
       .slice(0, limit)
-      .map(embedding => ({
+      .map((embedding) => ({
         path: embedding.path,
         score: 1, // No similarity score for recent entries
         text: embedding.text,
         sections: embedding.sections,
         timestamp: embedding.timestamp,
         excerpt: this.generateExcerpt(embedding.text, '', 150),
-        type: embedding.type
+        type: embedding.type,
       }));
 
     return results;
@@ -168,7 +170,9 @@ export class SearchService {
   async readEntry(filePath: string): Promise<string | null> {
     // In remote-only mode, can't read local files
     if (this.remoteConfig?.remoteOnly) {
-      throw new Error('Cannot read local files in remote-only mode. Use search to find entry content.');
+      throw new Error(
+        'Cannot read local files in remote-only mode. Use search to find entry content.'
+      );
     }
 
     try {
@@ -186,17 +190,12 @@ export class SearchService {
       throw new Error('Remote configuration not available');
     }
 
-    const {
-      limit = 10,
-      minScore = 0.1,
-      sections,
-      dateRange
-    } = options;
+    const { limit = 10, minScore = 0.1, sections, dateRange } = options;
 
     const searchRequest: RemoteSearchRequest = {
       query,
       limit,
-      similarity_threshold: minScore
+      similarity_threshold: minScore,
     };
 
     if (sections && sections.length > 0) {
@@ -215,18 +214,20 @@ export class SearchService {
     try {
       const response = await searchRemoteServer(this.remoteConfig, searchRequest);
 
-      return response.results.map(result => ({
+      return response.results.map((result) => ({
         path: result.id, // Use remote ID as path
         score: result.similarity_score,
         text: this.extractTextFromRemoteResult(result),
         sections: result.matched_sections || [],
         timestamp: result.timestamp,
         excerpt: this.generateExcerpt(this.extractTextFromRemoteResult(result), query),
-        type: 'project' as const // Remote entries don't distinguish project/user
+        type: 'project' as const, // Remote entries don't distinguish project/user
       }));
     } catch (error) {
       console.error('Remote search failed:', error);
-      throw new Error(`Remote search failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Remote search failed: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -240,18 +241,20 @@ export class SearchService {
     try {
       const response = await getRemoteEntries(this.remoteConfig, limit);
 
-      return response.entries.map(entry => ({
+      return response.entries.map((entry) => ({
         path: entry.id, // Use remote ID as path
         score: 1, // No similarity score for listing
         text: this.extractTextFromRemoteResult(entry),
         sections: this.extractSectionsFromRemoteResult(entry),
         timestamp: entry.timestamp,
         excerpt: this.generateExcerpt(this.extractTextFromRemoteResult(entry), '', 150),
-        type: 'project' as const // Remote entries don't distinguish project/user
+        type: 'project' as const, // Remote entries don't distinguish project/user
       }));
     } catch (error) {
       console.error('Remote listing failed:', error);
-      throw new Error(`Remote listing failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Remote listing failed: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -263,10 +266,14 @@ export class SearchService {
     if (result.sections) {
       const sections = [];
       if (result.sections.feelings) sections.push(`## Feelings\n\n${result.sections.feelings}`);
-      if (result.sections.project_notes) sections.push(`## Project Notes\n\n${result.sections.project_notes}`);
-      if (result.sections.user_context) sections.push(`## User Context\n\n${result.sections.user_context}`);
-      if (result.sections.technical_insights) sections.push(`## Technical Insights\n\n${result.sections.technical_insights}`);
-      if (result.sections.world_knowledge) sections.push(`## World Knowledge\n\n${result.sections.world_knowledge}`);
+      if (result.sections.project_notes)
+        sections.push(`## Project Notes\n\n${result.sections.project_notes}`);
+      if (result.sections.user_context)
+        sections.push(`## User Context\n\n${result.sections.user_context}`);
+      if (result.sections.technical_insights)
+        sections.push(`## Technical Insights\n\n${result.sections.technical_insights}`);
+      if (result.sections.world_knowledge)
+        sections.push(`## World Knowledge\n\n${result.sections.world_knowledge}`);
       return sections.join('\n\n');
     }
 
@@ -303,7 +310,7 @@ export class SearchService {
         }
 
         const files = await fs.readdir(dayPath);
-        const embeddingFiles = files.filter(file => file.endsWith('.embedding'));
+        const embeddingFiles = files.filter((file) => file.endsWith('.embedding'));
 
         for (const embeddingFile of embeddingFiles) {
           try {
@@ -352,7 +359,7 @@ export class SearchService {
     }
 
     let excerpt = text.slice(bestPosition, bestPosition + maxLength);
-    if (bestPosition > 0) excerpt = '...' + excerpt;
+    if (bestPosition > 0) excerpt = `...${excerpt}`;
     if (bestPosition + maxLength < text.length) excerpt += '...';
 
     return excerpt;

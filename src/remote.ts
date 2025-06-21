@@ -8,7 +8,7 @@ export interface RemoteConfig {
   teamId: string;
   apiKey: string;
   enabled: boolean;
-  remoteOnly?: boolean;  // Skip local storage, use server as single source of truth
+  remoteOnly?: boolean; // Skip local storage, use server as single source of truth
 }
 
 export interface RemoteJournalPayload {
@@ -58,7 +58,10 @@ export interface RemoteSearchResponse {
   query_embedding?: number[];
 }
 
-export async function postToRemoteServer(config: RemoteConfig, payload: RemoteJournalPayload): Promise<void> {
+export async function postToRemoteServer(
+  config: RemoteConfig,
+  payload: RemoteJournalPayload
+): Promise<void> {
   if (!config.enabled) {
     return;
   }
@@ -71,7 +74,7 @@ export async function postToRemoteServer(config: RemoteConfig, payload: RemoteJo
     console.error('URL:', url);
     console.error('Headers:', {
       'Content-Type': 'application/json',
-      'X-API-Key': config.apiKey.substring(0, 8) + '...'
+      'X-API-Key': `${config.apiKey.substring(0, 8)}...`,
     });
     console.error('Payload size:', JSON.stringify(payload).length, 'bytes');
     console.error('Payload structure:', {
@@ -80,7 +83,7 @@ export async function postToRemoteServer(config: RemoteConfig, payload: RemoteJo
       has_content: !!payload.content,
       has_sections: !!payload.sections,
       sections_count: payload.sections ? Object.keys(payload.sections).length : 0,
-      embedding_length: payload.embedding?.length || 0
+      embedding_length: payload.embedding?.length || 0,
     });
   }
 
@@ -89,9 +92,9 @@ export async function postToRemoteServer(config: RemoteConfig, payload: RemoteJo
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': config.apiKey
+        'X-API-Key': config.apiKey,
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
 
     if (debug) {
@@ -104,7 +107,9 @@ export async function postToRemoteServer(config: RemoteConfig, payload: RemoteJo
       if (debug) {
         console.error('Error response body:', errorText);
       }
-      throw new Error(`Remote server error: ${response.status} ${response.statusText} - ${errorText}`);
+      throw new Error(
+        `Remote server error: ${response.status} ${response.statusText} - ${errorText}`
+      );
     }
 
     const responseText = await response.text();
@@ -122,12 +127,18 @@ export async function postToRemoteServer(config: RemoteConfig, payload: RemoteJo
       console.error('=== END REMOTE POST ERROR ===');
     }
     // Log error but don't rethrow - we want local journaling to continue
-    console.error('Remote journal post failed:', error instanceof Error ? error.message : String(error));
+    console.error(
+      'Remote journal post failed:',
+      error instanceof Error ? error.message : String(error)
+    );
     throw error; // Re-throw for caller to handle gracefully
   }
 }
 
-export async function searchRemoteServer(config: RemoteConfig, searchRequest: RemoteSearchRequest): Promise<RemoteSearchResponse> {
+export async function searchRemoteServer(
+  config: RemoteConfig,
+  searchRequest: RemoteSearchRequest
+): Promise<RemoteSearchResponse> {
   if (!config.enabled) {
     throw new Error('Remote server not configured');
   }
@@ -146,9 +157,9 @@ export async function searchRemoteServer(config: RemoteConfig, searchRequest: Re
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': config.apiKey
+        'X-API-Key': config.apiKey,
       },
-      body: JSON.stringify(searchRequest)
+      body: JSON.stringify(searchRequest),
     });
 
     if (debug) {
@@ -161,10 +172,12 @@ export async function searchRemoteServer(config: RemoteConfig, searchRequest: Re
         console.error('Search error response:', errorText);
         console.error('=== END REMOTE SEARCH DEBUG ===');
       }
-      throw new Error(`Remote search error: ${response.status} ${response.statusText} - ${errorText}`);
+      throw new Error(
+        `Remote search error: ${response.status} ${response.statusText} - ${errorText}`
+      );
     }
 
-    const data = await response.json() as RemoteSearchResponse;
+    const data = (await response.json()) as RemoteSearchResponse;
     if (debug) {
       console.error('Search response data:', JSON.stringify(data, null, 2));
       console.error('=== END REMOTE SEARCH DEBUG ===');
@@ -181,7 +194,11 @@ export async function searchRemoteServer(config: RemoteConfig, searchRequest: Re
   }
 }
 
-export async function getRemoteEntries(config: RemoteConfig, limit?: number, offset?: number): Promise<{ entries: RemoteSearchResult[], total_count: number }> {
+export async function getRemoteEntries(
+  config: RemoteConfig,
+  limit?: number,
+  offset?: number
+): Promise<{ entries: RemoteSearchResult[]; total_count: number }> {
   if (!config.enabled) {
     throw new Error('Remote server not configured');
   }
@@ -203,8 +220,8 @@ export async function getRemoteEntries(config: RemoteConfig, limit?: number, off
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'X-API-Key': config.apiKey
-      }
+        'X-API-Key': config.apiKey,
+      },
     });
 
     if (debug) {
@@ -217,10 +234,12 @@ export async function getRemoteEntries(config: RemoteConfig, limit?: number, off
         console.error('Entries error response:', errorText);
         console.error('=== END REMOTE ENTRIES DEBUG ===');
       }
-      throw new Error(`Remote entries error: ${response.status} ${response.statusText} - ${errorText}`);
+      throw new Error(
+        `Remote entries error: ${response.status} ${response.statusText} - ${errorText}`
+      );
     }
 
-    const data = await response.json() as any;
+    const data = (await response.json()) as any;
     if (debug) {
       console.error('Entries response data:', JSON.stringify(data, null, 2));
       console.error('=== END REMOTE ENTRIES DEBUG ===');
@@ -228,7 +247,7 @@ export async function getRemoteEntries(config: RemoteConfig, limit?: number, off
 
     return {
       entries: data.entries || [],
-      total_count: data.total_count || 0
+      total_count: data.total_count || 0,
     };
   } catch (error) {
     if (debug) {
@@ -236,7 +255,10 @@ export async function getRemoteEntries(config: RemoteConfig, limit?: number, off
       console.error('Error details:', error);
       console.error('=== END REMOTE ENTRIES ERROR ===');
     }
-    console.error('Remote entries fetch failed:', error instanceof Error ? error.message : String(error));
+    console.error(
+      'Remote entries fetch failed:',
+      error instanceof Error ? error.message : String(error)
+    );
     throw error;
   }
 }
@@ -256,6 +278,6 @@ export function createRemoteConfig(): RemoteConfig | undefined {
     teamId,
     apiKey,
     enabled: true,
-    remoteOnly
+    remoteOnly,
   };
 }
