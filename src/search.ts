@@ -178,7 +178,11 @@ export class SearchService {
     try {
       return await fs.readFile(filePath, 'utf8');
     } catch (error) {
-      if ((error as any)?.code === 'ENOENT') {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        (error as NodeJS.ErrnoException).code === 'ENOENT'
+      ) {
         return null;
       }
       throw error;
@@ -258,7 +262,10 @@ export class SearchService {
     }
   }
 
-  private extractTextFromRemoteResult(result: any): string {
+  private extractTextFromRemoteResult(result: {
+    content?: string;
+    sections?: Record<string, string>;
+  }): string {
     if (result.content) {
       return result.content;
     }
@@ -280,7 +287,7 @@ export class SearchService {
     return '';
   }
 
-  private extractSectionsFromRemoteResult(result: any): string[] {
+  private extractSectionsFromRemoteResult(result: { sections?: Record<string, string> }): string[] {
     const sections = [];
     if (result.sections) {
       if (result.sections.feelings) sections.push('Feelings');
@@ -325,7 +332,13 @@ export class SearchService {
         }
       }
     } catch (error) {
-      if ((error as any)?.code !== 'ENOENT') {
+      if (
+        !(
+          error instanceof Error &&
+          'code' in error &&
+          (error as NodeJS.ErrnoException).code === 'ENOENT'
+        )
+      ) {
         console.error(`Failed to read embeddings from ${basePath}:`, error);
       }
       // Return empty array if directory doesn't exist

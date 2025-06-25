@@ -12,7 +12,7 @@ import {
 
 // Mock node-fetch
 jest.mock('node-fetch', () => jest.fn());
-const mockFetch = require('node-fetch') as jest.MockedFunction<any>;
+const mockFetch = require('node-fetch') as jest.MockedFunction<typeof fetch>;
 
 describe('Remote Journal Posting', () => {
   const mockConfig: RemoteConfig = {
@@ -52,7 +52,7 @@ describe('Remote Journal Posting', () => {
         text: jest.fn().mockResolvedValue('Success'),
         json: jest.fn().mockResolvedValue({}),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       const payload: RemoteJournalPayload = {
         team_id: 'test-team',
@@ -83,7 +83,7 @@ describe('Remote Journal Posting', () => {
         text: jest.fn().mockResolvedValue('Success'),
         json: jest.fn().mockResolvedValue({}),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       const payload: RemoteJournalPayload = {
         team_id: 'test-team',
@@ -112,7 +112,7 @@ describe('Remote Journal Posting', () => {
         text: jest.fn().mockResolvedValue('Success'),
         json: jest.fn().mockResolvedValue({}),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       const payload: RemoteJournalPayload = {
         team_id: 'test-team',
@@ -136,8 +136,8 @@ describe('Remote Journal Posting', () => {
       );
 
       // Verify the payload includes the embedding
-      const callArgs = mockFetch.mock.calls[0][1];
-      const sentPayload = JSON.parse(callArgs.body);
+      const callArgs = mockFetch.mock.calls[0][1] as RequestInit;
+      const sentPayload = JSON.parse(callArgs.body as string);
       expect(sentPayload.embedding).toEqual([0.1, 0.2, 0.3, 0.4, 0.5]);
     });
 
@@ -166,7 +166,7 @@ describe('Remote Journal Posting', () => {
         text: jest.fn().mockResolvedValue('Server Error'),
         json: jest.fn().mockResolvedValue({}),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       const payload: RemoteJournalPayload = {
         team_id: 'test-team',
@@ -281,7 +281,7 @@ describe('Remote Journal Posting', () => {
           query_embedding: [0.1, 0.2, 0.3],
         }),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       const searchRequest = {
         query: 'frustrated TypeScript',
@@ -327,7 +327,7 @@ describe('Remote Journal Posting', () => {
         text: jest.fn().mockResolvedValue('Server Error'),
         json: jest.fn().mockResolvedValue({}),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       await expect(searchRemoteServer(mockConfig, { query: 'test' })).rejects.toThrow(
         'Remote search error: 500 Internal Server Error'
@@ -362,7 +362,7 @@ describe('Remote Journal Posting', () => {
           total_count: 2,
         }),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       const result = await getRemoteEntries(mockConfig, 10, 0);
 
@@ -390,7 +390,7 @@ describe('Remote Journal Posting', () => {
           total_count: 0,
         }),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       await getRemoteEntries(mockConfig);
 
@@ -421,7 +421,7 @@ describe('Remote Journal Posting', () => {
         text: jest.fn().mockResolvedValue('Not Found'),
         json: jest.fn().mockResolvedValue({}),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       await expect(getRemoteEntries(mockConfig)).rejects.toThrow(
         'Remote entries error: 404 Not Found'

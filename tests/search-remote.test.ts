@@ -9,7 +9,7 @@ import { SearchService } from '../src/search';
 
 // Mock node-fetch
 jest.mock('node-fetch', () => jest.fn());
-const mockFetch = require('node-fetch') as jest.MockedFunction<any>;
+const mockFetch = require('node-fetch') as jest.MockedFunction<typeof fetch>;
 
 // Mock the embedding service
 jest.mock('../src/embeddings', () => ({
@@ -131,7 +131,7 @@ I feel frustrated with TypeScript today`;
           query_embedding: [0.1, 0.2, 0.3],
         }),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       const results = await remoteOnlySearchService.search('frustrated TypeScript');
 
@@ -162,7 +162,7 @@ I feel frustrated with TypeScript today`;
           total_count: 0,
         }),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       await remoteOnlySearchService.search('test query', {
         limit: 20,
@@ -174,7 +174,7 @@ I feel frustrated with TypeScript today`;
         },
       });
 
-      const requestBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const requestBody = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
       expect(requestBody).toEqual({
         query: 'test query',
         limit: 20,
@@ -202,7 +202,7 @@ I feel frustrated with TypeScript today`;
           total_count: 1,
         }),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       const results = await remoteOnlySearchService.listRecent({ limit: 5 });
 
@@ -235,7 +235,7 @@ I feel frustrated with TypeScript today`;
         text: jest.fn().mockResolvedValue('Server Error'),
         json: jest.fn().mockResolvedValue({}),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       await expect(remoteOnlySearchService.search('test query')).rejects.toThrow(
         'Remote search failed: Remote search error: 500 Internal Server Error'
@@ -249,7 +249,7 @@ I feel frustrated with TypeScript today`;
         statusText: 'Not Found',
         text: jest.fn().mockResolvedValue('Not Found'),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       await expect(remoteOnlySearchService.listRecent()).rejects.toThrow(
         'Remote listing failed: Remote entries error: 404 Not Found'
@@ -276,7 +276,7 @@ I feel frustrated with TypeScript today`;
         status: 200,
         json: jest.fn(),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
     });
 
     it('should extract text from content-based entries', async () => {
@@ -296,7 +296,7 @@ I feel frustrated with TypeScript today`;
           ],
           total_count: 1,
         }),
-      });
+      } as unknown as Response);
 
       const results = await remoteOnlySearchService.search('simple content');
       expect(results[0].text).toBe('This is a simple content entry');
@@ -325,7 +325,7 @@ I feel frustrated with TypeScript today`;
           ],
           total_count: 1,
         }),
-      });
+      } as unknown as Response);
 
       const results = await remoteOnlySearchService.search('excited feature');
 
@@ -354,7 +354,7 @@ I feel frustrated with TypeScript today`;
           ],
           total_count: 1,
         }),
-      });
+      } as unknown as Response);
 
       const results = await remoteOnlySearchService.listRecent();
 
@@ -377,7 +377,7 @@ I feel frustrated with TypeScript today`;
           ],
           total_count: 1,
         }),
-      });
+      } as unknown as Response);
 
       const results = await remoteOnlySearchService.search('empty');
 

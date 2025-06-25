@@ -9,7 +9,7 @@ import { SearchService } from '../src/search';
 
 // Mock node-fetch
 jest.mock('node-fetch', () => jest.fn());
-const mockFetch = require('node-fetch') as jest.MockedFunction<any>;
+const mockFetch = require('node-fetch') as jest.MockedFunction<typeof fetch>;
 
 // Mock the embedding service
 jest.mock('../src/embeddings', () => ({
@@ -58,7 +58,7 @@ describe('Remote-Only Mode', () => {
     // Clean up temporary directory
     try {
       await fs.rm(tempDir, { recursive: true, force: true });
-    } catch (_error) {
+    } catch {
       // Ignore cleanup errors
     }
   });
@@ -72,7 +72,7 @@ describe('Remote-Only Mode', () => {
         text: jest.fn().mockResolvedValue('Success'),
         json: jest.fn().mockResolvedValue({}),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       await journalManager.writeEntry('Test journal entry');
 
@@ -100,7 +100,7 @@ describe('Remote-Only Mode', () => {
         text: jest.fn().mockResolvedValue('Success'),
         json: jest.fn().mockResolvedValue({}),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       await journalManager.writeThoughts({
         feelings: 'I feel great',
@@ -128,7 +128,7 @@ describe('Remote-Only Mode', () => {
         statusText: 'Internal Server Error',
         text: jest.fn().mockResolvedValue('Server Error'),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       await expect(journalManager.writeEntry('Test entry')).rejects.toThrow(
         'Remote journal posting failed: Remote server error: 500 Internal Server Error'
@@ -175,7 +175,7 @@ describe('Remote-Only Mode', () => {
           query_embedding: [0.1, 0.2, 0.3],
         }),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       const results = await searchService.search('frustrated TypeScript');
 
@@ -209,7 +209,7 @@ describe('Remote-Only Mode', () => {
           total_count: 1,
         }),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       const results = await searchService.listRecent({ limit: 5 });
 
@@ -237,7 +237,7 @@ describe('Remote-Only Mode', () => {
         statusText: 'Internal Server Error',
         text: jest.fn().mockResolvedValue('Server Error'),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       await expect(searchService.search('test query')).rejects.toThrow(
         'Remote search failed: Remote search error: 500 Internal Server Error'
@@ -253,7 +253,7 @@ describe('Remote-Only Mode', () => {
           total_count: 0,
         }),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       await searchService.search('test', {
         limit: 20,
@@ -272,7 +272,7 @@ describe('Remote-Only Mode', () => {
         })
       );
 
-      const requestBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const requestBody = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
       expect(requestBody).toEqual({
         query: 'test',
         limit: 20,
@@ -307,7 +307,7 @@ describe('Remote-Only Mode', () => {
         status: 200,
         json: jest.fn().mockRejectedValue(new Error('Invalid JSON')),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       await expect(searchService.search('test')).rejects.toThrow(
         'Remote search failed: Invalid JSON'
@@ -334,7 +334,7 @@ describe('Remote-Only Mode', () => {
           total_count: 1,
         }),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       const results = await searchService.search('simple content');
 
@@ -362,7 +362,7 @@ describe('Remote-Only Mode', () => {
           total_count: 1,
         }),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       const results = await searchService.search('excited feature');
 

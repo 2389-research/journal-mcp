@@ -512,23 +512,23 @@ export class PrivateJournalServer {
 
   private generatePrompt(
     promptName: string,
-    args: Record<string, any>
+    args: Record<string, unknown>
   ): { description: string; content: string } {
     switch (promptName) {
       case 'daily_reflection':
         return {
           description: 'A structured daily reflection prompt',
-          content: this.generateDailyReflectionPrompt(args.focus_area),
+          content: this.generateDailyReflectionPrompt(args.focus_area as string),
         };
       case 'project_retrospective':
         return {
           description: 'A project retrospective prompt',
-          content: this.generateProjectRetrospectivePrompt(args.project_name),
+          content: this.generateProjectRetrospectivePrompt(args.project_name as string),
         };
       case 'learning_capture':
         return {
           description: 'A learning capture prompt',
-          content: this.generateLearningCapturePrompt(args.topic),
+          content: this.generateLearningCapturePrompt(args.topic as string),
         };
       case 'emotional_processing':
         return {

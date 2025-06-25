@@ -8,7 +8,7 @@ import { JournalManager } from '../src/journal';
 import type { RemoteConfig } from '../src/remote';
 
 // Mock node-fetch for these tests
-const mockFetch = require('node-fetch') as jest.MockedFunction<any>;
+const mockFetch = require('node-fetch') as jest.MockedFunction<typeof fetch>;
 
 describe('JournalManager with Remote Posting', () => {
   let projectTempDir: string;
@@ -68,7 +68,7 @@ describe('JournalManager with Remote Posting', () => {
       text: jest.fn().mockResolvedValue('Success'),
       json: jest.fn().mockResolvedValue({}),
     };
-    mockFetch.mockResolvedValue(mockResponse);
+    mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
     const content = 'This is a test journal entry.';
     await journalManager.writeEntry(content);
@@ -98,7 +98,7 @@ describe('JournalManager with Remote Posting', () => {
 
     // Verify payload structure
     const callArgs = mockFetch.mock.calls[0][1];
-    const payload = JSON.parse(callArgs.body);
+    const payload = JSON.parse((callArgs as RequestInit).body as string);
     expect(payload).toEqual({
       team_id: 'test-team',
       timestamp: expect.any(Number),
@@ -108,7 +108,7 @@ describe('JournalManager with Remote Posting', () => {
 
     // Verify embedding is a valid vector
     expect(payload.embedding).toHaveLength(5); // Mock embedding has 5 elements
-    expect(payload.embedding.every((n: any) => typeof n === 'number')).toBe(true);
+    expect(payload.embedding.every((n: unknown) => typeof n === 'number')).toBe(true);
   });
 
   test('posts thoughts with sections to remote server', async () => {
@@ -119,7 +119,7 @@ describe('JournalManager with Remote Posting', () => {
       text: jest.fn().mockResolvedValue('Success'),
       json: jest.fn().mockResolvedValue({}),
     };
-    mockFetch.mockResolvedValue(mockResponse);
+    mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
     const thoughts = {
       feelings: 'I feel great',
@@ -139,7 +139,7 @@ describe('JournalManager with Remote Posting', () => {
 
     // Verify payload structure for thoughts
     const callArgs = mockFetch.mock.calls[0][1];
-    const payload = JSON.parse(callArgs.body);
+    const payload = JSON.parse((callArgs as RequestInit).body as string);
     expect(payload).toEqual({
       team_id: 'test-team',
       timestamp: expect.any(Number),
@@ -155,7 +155,7 @@ describe('JournalManager with Remote Posting', () => {
 
     // Verify embedding is included and valid
     expect(payload.embedding).toHaveLength(5); // Mock embedding has 5 elements
-    expect(payload.embedding.every((n: any) => typeof n === 'number')).toBe(true);
+    expect(payload.embedding.every((n: unknown) => typeof n === 'number')).toBe(true);
   });
 
   test('continues local journaling when remote posting fails', async () => {
@@ -178,7 +178,8 @@ describe('JournalManager with Remote Posting', () => {
     const files = await fs.readdir(dayDir);
     expect(files.some((f) => f.endsWith('.md'))).toBe(true);
 
-    const mdFile = files.find((f) => f.endsWith('.md'))!;
+    const mdFile = files.find((f) => f.endsWith('.md'));
+    if (!mdFile) throw new Error('No .md file found');
     const filePath = path.join(dayDir, mdFile);
     const fileContent = await fs.readFile(filePath, 'utf8');
     expect(fileContent).toContain('This should still be saved locally.');
@@ -253,7 +254,7 @@ describe('JournalManager with Remote Posting', () => {
         text: jest.fn().mockResolvedValue('Success'),
         json: jest.fn().mockResolvedValue({}),
       };
-      mockFetch.mockResolvedValue(mockResponse);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       const content = 'This should only go to remote server.';
       await remoteOnlyJournalManager.writeEntry(content);
@@ -279,7 +280,7 @@ describe('JournalManager with Remote Posting', () => {
         text: jest.fn().mockResolvedValue('Server Error'),
         json: jest.fn().mockResolvedValue({}),
       };
-      mockFetch.mockResolvedValue(mockResponse);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       const content = 'This should fail.';
 
@@ -316,7 +317,7 @@ describe('JournalManager with Remote Posting', () => {
         text: jest.fn().mockResolvedValue('Success'),
         json: jest.fn().mockResolvedValue({}),
       };
-      mockFetch.mockResolvedValue(mockResponse);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       const thoughts = {
         feelings: 'Remote only feelings',

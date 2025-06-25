@@ -13,7 +13,7 @@ export interface EmbeddingData {
 }
 
 export class EmbeddingService {
-  private static instance: EmbeddingService;
+  private static instance: EmbeddingService | null = null;
   private extractor: FeatureExtractionPipeline | null = null;
   private readonly modelName: string;
   private initPromise: Promise<void> | null = null;
@@ -54,7 +54,7 @@ export class EmbeddingService {
   }
 
   static resetInstance(): void {
-    EmbeddingService.instance = null as any;
+    EmbeddingService.instance = null;
   }
 
   async generateEmbedding(text: string): Promise<number[]> {
@@ -109,7 +109,11 @@ export class EmbeddingService {
       const content = await fs.readFile(embeddingPath, 'utf8');
       return JSON.parse(content);
     } catch (error) {
-      if ((error as any)?.code === 'ENOENT') {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        (error as NodeJS.ErrnoException).code === 'ENOENT'
+      ) {
         return null; // File doesn't exist
       }
       throw error;

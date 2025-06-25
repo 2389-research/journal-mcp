@@ -239,14 +239,14 @@ export async function getRemoteEntries(
       );
     }
 
-    const data = (await response.json()) as any;
+    const data = (await response.json()) as { entries?: unknown[]; total_count?: number };
     if (debug) {
       console.error('Entries response data:', JSON.stringify(data, null, 2));
       console.error('=== END REMOTE ENTRIES DEBUG ===');
     }
 
     return {
-      entries: data.entries || [],
+      entries: (data.entries || []) as RemoteSearchResult[],
       total_count: data.total_count || 0,
     };
   } catch (error) {

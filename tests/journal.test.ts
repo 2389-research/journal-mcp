@@ -85,7 +85,8 @@ describe('JournalManager', () => {
     const dayDir = path.join(projectTempDir, dateString);
     const files = await fs.readdir(dayDir);
     const mdFile = files.find((f) => f.endsWith('.md'));
-    const filePath = path.join(dayDir, mdFile!);
+    if (!mdFile) throw new Error('No .md file found');
+    const filePath = path.join(dayDir, mdFile);
 
     const fileContent = await fs.readFile(filePath, 'utf8');
 
@@ -134,7 +135,8 @@ describe('JournalManager', () => {
 
     expect(files.some((f) => f.endsWith('.md'))).toBe(true); // At least .md file
 
-    const mdFile = files.find((f) => f.endsWith('.md'))!;
+    const mdFile = files.find((f) => f.endsWith('.md'));
+    if (!mdFile) throw new Error('No .md file found');
     const filePath = path.join(dayDir, mdFile);
     const fileContent = await fs.readFile(filePath, 'utf8');
 
@@ -154,7 +156,8 @@ describe('JournalManager', () => {
     const dateString = getFormattedDate(today);
     const dayDir = path.join(projectTempDir, dateString);
     const files = await fs.readdir(dayDir);
-    const mdFile = files.find((f) => f.endsWith('.md'))!;
+    const mdFile = files.find((f) => f.endsWith('.md'));
+    if (!mdFile) throw new Error('No .md file found');
     const filePath = path.join(dayDir, mdFile);
 
     const fileContent = await fs.readFile(filePath, 'utf8');
@@ -175,7 +178,8 @@ describe('JournalManager', () => {
     const projectFiles = await fs.readdir(projectDayDir);
     expect(projectFiles.some((f) => f.endsWith('.md'))).toBe(true);
 
-    const projectMdFile = projectFiles.find((f) => f.endsWith('.md'))!;
+    const projectMdFile = projectFiles.find((f) => f.endsWith('.md'));
+    if (!projectMdFile) throw new Error('No project .md file found');
     const projectFilePath = path.join(projectDayDir, projectMdFile);
     const projectContent = await fs.readFile(projectFilePath, 'utf8');
 
@@ -199,7 +203,8 @@ describe('JournalManager', () => {
     const userFiles = await fs.readdir(userDayDir);
     expect(userFiles.some((f) => f.endsWith('.md'))).toBe(true);
 
-    const userMdFile = userFiles.find((f) => f.endsWith('.md'))!;
+    const userMdFile = userFiles.find((f) => f.endsWith('.md'));
+    if (!userMdFile) throw new Error('No user .md file found');
     const userFilePath = path.join(userDayDir, userMdFile);
     const userContent = await fs.readFile(userFilePath, 'utf8');
 
@@ -229,7 +234,8 @@ describe('JournalManager', () => {
     const projectFiles = await fs.readdir(projectDayDir);
     expect(projectFiles.some((f) => f.endsWith('.md'))).toBe(true);
 
-    const mdFile = projectFiles.find((f) => f.endsWith('.md'))!;
+    const mdFile = projectFiles.find((f) => f.endsWith('.md'));
+    if (!mdFile) throw new Error('No .md file found');
     const projectContent = await fs.readFile(path.join(projectDayDir, mdFile), 'utf8');
     expect(projectContent).toContain('## Project Notes');
     expect(projectContent).toContain('The architecture is solid');
@@ -240,7 +246,8 @@ describe('JournalManager', () => {
     const userFiles = await fs.readdir(userDayDir);
     expect(userFiles.some((f) => f.endsWith('.md'))).toBe(true);
 
-    const userMdFile = userFiles.find((f) => f.endsWith('.md'))!;
+    const userMdFile = userFiles.find((f) => f.endsWith('.md'));
+    if (!userMdFile) throw new Error('No user .md file found');
     const userContent = await fs.readFile(path.join(userDayDir, userMdFile), 'utf8');
     expect(userContent).toContain('## Feelings');
     expect(userContent).toContain('## User Context');
@@ -264,7 +271,8 @@ describe('JournalManager', () => {
     const userFiles = await fs.readdir(userDayDir);
     expect(userFiles.some((f) => f.endsWith('.md'))).toBe(true);
 
-    const userMdFile = userFiles.find((f) => f.endsWith('.md'))!;
+    const userMdFile = userFiles.find((f) => f.endsWith('.md'));
+    if (!userMdFile) throw new Error('No user .md file found');
     const userContent = await fs.readFile(path.join(userDayDir, userMdFile), 'utf8');
     expect(userContent).toContain('## World Knowledge');
     expect(userContent).toContain('Learned something interesting about databases');
@@ -289,7 +297,8 @@ describe('JournalManager', () => {
     const projectFiles = await fs.readdir(projectDayDir);
     expect(projectFiles.some((f) => f.endsWith('.md'))).toBe(true);
 
-    const mdFile = projectFiles.find((f) => f.endsWith('.md'))!;
+    const mdFile = projectFiles.find((f) => f.endsWith('.md'));
+    if (!mdFile) throw new Error('No .md file found');
     const projectContent = await fs.readFile(path.join(projectDayDir, mdFile), 'utf8');
     expect(projectContent).toContain('## Project Notes');
     expect(projectContent).toContain('This specific codebase pattern works well');
@@ -314,7 +323,8 @@ describe('JournalManager', () => {
       const customFiles = await fs.readdir(customDayDir);
       expect(customFiles.some((f) => f.endsWith('.md'))).toBe(true);
 
-      const customMdFile = customFiles.find((f) => f.endsWith('.md'))!;
+      const customMdFile = customFiles.find((f) => f.endsWith('.md'));
+      if (!customMdFile) throw new Error('No custom .md file found');
       const customContent = await fs.readFile(path.join(customDayDir, customMdFile), 'utf8');
       expect(customContent).toContain('Testing custom path');
     } finally {

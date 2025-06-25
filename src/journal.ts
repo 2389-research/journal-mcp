@@ -279,7 +279,13 @@ ${sections.join('\n\n')}
           }
         }
       } catch (error) {
-        if ((error as any)?.code !== 'ENOENT') {
+        if (
+          !(
+            error instanceof Error &&
+            'code' in error &&
+            (error as NodeJS.ErrnoException).code === 'ENOENT'
+          )
+        ) {
           console.error(`Failed to scan ${basePath} for missing embeddings:`, error);
         }
       }
@@ -314,7 +320,7 @@ ${sections.join('\n\n')}
   private async ensureDirectoryExists(dirPath: string): Promise<void> {
     try {
       await fs.access(dirPath);
-    } catch (_error) {
+    } catch {
       try {
         await fs.mkdir(dirPath, { recursive: true });
       } catch (mkdirError) {
