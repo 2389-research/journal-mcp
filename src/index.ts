@@ -3,9 +3,9 @@
 // ABOUTME: Main entry point for the private journal MCP server
 // ABOUTME: Handles command line arguments and starts the server
 
-import * as path from 'path';
-import { PrivateJournalServer } from './server';
+import * as path from 'node:path';
 import { resolveProjectJournalPath } from './paths';
+import { PrivateJournalServer } from './server';
 
 function parseArguments(): string {
   const args = process.argv.slice(2);

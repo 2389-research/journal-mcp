@@ -1,13 +1,13 @@
 // ABOUTME: Unit tests for embedding functionality and search capabilities
 // ABOUTME: Tests embedding generation, storage, and semantic search operations
 
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import * as os from 'os';
+import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
+import * as path from 'node:path';
 
 import { EmbeddingService } from '../src/embeddings';
-import { SearchService } from '../src/search';
 import { JournalManager } from '../src/journal';
+import { SearchService } from '../src/search';
 
 describe('Embedding and Search functionality', () => {
   let projectTempDir: string;
@@ -94,7 +94,7 @@ TypeScript interfaces are really powerful for maintaining code quality.`;
   test('journal manager generates embeddings when writing thoughts', async () => {
     const thoughts = {
       feelings: 'I feel excited about implementing this search feature',
-      technical_insights: 'Vector embeddings provide semantic understanding of text'
+      technical_insights: 'Vector embeddings provide semantic understanding of text',
     };
 
     await journalManager.writeThoughts(thoughts);
@@ -107,8 +107,8 @@ TypeScript interfaces are really powerful for maintaining code quality.`;
     const userDayDir = path.join(userTempDir, '.private-journal', dateString);
     const userFiles = await fs.readdir(userDayDir);
 
-    const userMdFile = userFiles.find(f => f.endsWith('.md'));
-    const userEmbeddingFile = userFiles.find(f => f.endsWith('.embedding'));
+    const userMdFile = userFiles.find((f) => f.endsWith('.md'));
+    const userEmbeddingFile = userFiles.find((f) => f.endsWith('.embedding'));
 
     expect(userMdFile).toBeDefined();
     expect(userEmbeddingFile).toBeDefined();
@@ -128,19 +128,19 @@ TypeScript interfaces are really powerful for maintaining code quality.`;
   test('search service finds semantically similar entries', async () => {
     // Write some test entries
     await journalManager.writeThoughts({
-      feelings: 'I feel frustrated with debugging TypeScript errors'
+      feelings: 'I feel frustrated with debugging TypeScript errors',
     });
 
     await journalManager.writeThoughts({
-      technical_insights: 'JavaScript async patterns can be tricky to understand'
+      technical_insights: 'JavaScript async patterns can be tricky to understand',
     });
 
     await journalManager.writeThoughts({
-      project_notes: 'The React component architecture is working well'
+      project_notes: 'The React component architecture is working well',
     });
 
     // Wait a moment for embeddings to be generated
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Search for similar entries
     const results = await searchService.search('feeling upset about TypeScript problems');
@@ -148,7 +148,9 @@ TypeScript interfaces are really powerful for maintaining code quality.`;
     expect(results.length).toBeGreaterThan(0);
 
     // With mocked embeddings, we can't predict exact order, but we should find relevant entries
-    const frustrationEntry = results.find(r => r.text.includes('frustrated') && r.text.includes('TypeScript'));
+    const frustrationEntry = results.find(
+      (r) => r.text.includes('frustrated') && r.text.includes('TypeScript')
+    );
     expect(frustrationEntry).toBeDefined();
 
     if (frustrationEntry) {
@@ -160,14 +162,14 @@ TypeScript interfaces are really powerful for maintaining code quality.`;
   test('search service can filter by entry type', async () => {
     // Add project and user entries
     await journalManager.writeThoughts({
-      project_notes: 'This project uses React and TypeScript'
+      project_notes: 'This project uses React and TypeScript',
     });
 
     await journalManager.writeThoughts({
-      feelings: 'I enjoy working with modern JavaScript frameworks'
+      feelings: 'I enjoy working with modern JavaScript frameworks',
     });
 
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Search only project entries
     const projectResults = await searchService.search('React TypeScript', { type: 'project' });

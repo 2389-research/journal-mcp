@@ -1,8 +1,12 @@
 // ABOUTME: Unit tests for path resolution utilities
 // ABOUTME: Tests cross-platform fallback logic and environment handling
 
-import * as path from 'path';
-import { resolveJournalPath, resolveUserJournalPath, resolveProjectJournalPath } from '../src/paths';
+import * as path from 'node:path';
+import {
+  resolveJournalPath,
+  resolveProjectJournalPath,
+  resolveUserJournalPath,
+} from '../src/paths';
 
 describe('Path resolution utilities', () => {
   let originalEnv: NodeJS.ProcessEnv;
@@ -27,7 +31,7 @@ describe('Path resolution utilities', () => {
   test('resolveJournalPath skips system directories', () => {
     const systemPaths = ['/', 'C:\\', '/System', '/usr'];
 
-    systemPaths.forEach(systemPath => {
+    systemPaths.forEach((systemPath) => {
       jest.spyOn(process, 'cwd').mockReturnValue(systemPath);
       process.env.HOME = '/Users/test';
 

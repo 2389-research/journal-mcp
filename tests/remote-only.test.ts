@@ -1,15 +1,15 @@
 // ABOUTME: Tests for remote-only mode functionality
 // ABOUTME: Validates journal manager and search service behavior when using only remote storage
 
-import * as fs from 'fs/promises';
-import * as path from 'path';
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import { JournalManager } from '../src/journal';
+import type { RemoteConfig } from '../src/remote';
 import { SearchService } from '../src/search';
-import { RemoteConfig } from '../src/remote';
 
 // Mock node-fetch
 jest.mock('node-fetch', () => jest.fn());
-const mockFetch = require('node-fetch') as jest.MockedFunction<any>;
+const mockFetch = require('node-fetch') as jest.MockedFunction<typeof fetch>;
 
 // Mock the embedding service
 jest.mock('../src/embeddings', () => ({
@@ -18,10 +18,10 @@ jest.mock('../src/embeddings', () => ({
       generateEmbedding: jest.fn().mockResolvedValue([0.1, 0.2, 0.3, 0.4, 0.5]),
       extractSearchableText: jest.fn().mockReturnValue({
         text: 'extracted text',
-        sections: ['Feelings']
-      })
-    })
-  }
+        sections: ['Feelings'],
+      }),
+    }),
+  },
 }));
 
 describe('Remote-Only Mode', () => {
@@ -35,14 +35,14 @@ describe('Remote-Only Mode', () => {
     // Mock console.error to keep test output clean
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     // Create temporary directory
-    tempDir = await fs.mkdtemp(path.join(require('os').tmpdir(), 'journal-test-'));
+    tempDir = await fs.mkdtemp(path.join(require('node:os').tmpdir(), 'journal-test-'));
 
     remoteOnlyConfig = {
       serverUrl: 'https://api.example.com',
       teamId: 'test-team',
       apiKey: 'test-key',
       enabled: true,
-      remoteOnly: true
+      remoteOnly: true,
     };
 
     journalManager = new JournalManager(tempDir, undefined, remoteOnlyConfig);
@@ -58,7 +58,7 @@ describe('Remote-Only Mode', () => {
     // Clean up temporary directory
     try {
       await fs.rm(tempDir, { recursive: true, force: true });
-    } catch (error) {
+    } catch {
       // Ignore cleanup errors
     }
   });
@@ -70,9 +70,9 @@ describe('Remote-Only Mode', () => {
         status: 200,
         statusText: 'OK',
         text: jest.fn().mockResolvedValue('Success'),
-        json: jest.fn().mockResolvedValue({})
+        json: jest.fn().mockResolvedValue({}),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       await journalManager.writeEntry('Test journal entry');
 
@@ -86,8 +86,8 @@ describe('Remote-Only Mode', () => {
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
-            'X-API-Key': 'test-key'
-          })
+            'X-API-Key': 'test-key',
+          }),
         })
       );
     });
@@ -98,13 +98,13 @@ describe('Remote-Only Mode', () => {
         status: 200,
         statusText: 'OK',
         text: jest.fn().mockResolvedValue('Success'),
-        json: jest.fn().mockResolvedValue({})
+        json: jest.fn().mockResolvedValue({}),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       await journalManager.writeThoughts({
         feelings: 'I feel great',
-        project_notes: 'Code is working well'
+        project_notes: 'Code is working well',
       });
 
       // Verify no local files were created
@@ -116,7 +116,7 @@ describe('Remote-Only Mode', () => {
         'https://api.example.com/teams/test-team/journal/entries',
         expect.objectContaining({
           method: 'POST',
-          body: expect.stringContaining('"sections"')
+          body: expect.stringContaining('"sections"'),
         })
       );
     });
@@ -126,9 +126,9 @@ describe('Remote-Only Mode', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-        text: jest.fn().mockResolvedValue('Server Error')
+        text: jest.fn().mockResolvedValue('Server Error'),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       await expect(journalManager.writeEntry('Test entry')).rejects.toThrow(
         'Remote journal posting failed: Remote server error: 500 Internal Server Error'
@@ -166,16 +166,16 @@ describe('Remote-Only Mode', () => {
               timestamp: 1717160645123,
               created_at: '2024-05-31T14:30:45.123Z',
               sections: {
-                feelings: 'I feel frustrated with TypeScript'
+                feelings: 'I feel frustrated with TypeScript',
               },
-              matched_sections: ['feelings']
-            }
+              matched_sections: ['feelings'],
+            },
           ],
           total_count: 1,
-          query_embedding: [0.1, 0.2, 0.3]
-        })
+          query_embedding: [0.1, 0.2, 0.3],
+        }),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       const results = await searchService.search('frustrated TypeScript');
 
@@ -183,7 +183,7 @@ describe('Remote-Only Mode', () => {
         'https://api.example.com/teams/test-team/journal/search',
         expect.objectContaining({
           method: 'POST',
-          body: expect.stringContaining('"query":"frustrated TypeScript"')
+          body: expect.stringContaining('"query":"frustrated TypeScript"'),
         })
       );
 
@@ -203,20 +203,20 @@ describe('Remote-Only Mode', () => {
               team_id: 'test-team',
               timestamp: 1717160644000,
               created_at: '2024-05-31T14:30:44.000Z',
-              content: 'Recent entry content'
-            }
+              content: 'Recent entry content',
+            },
           ],
-          total_count: 1
-        })
+          total_count: 1,
+        }),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       const results = await searchService.listRecent({ limit: 5 });
 
       expect(mockFetch).toHaveBeenCalledWith(
         'https://api.example.com/teams/test-team/journal/entries?limit=5',
         expect.objectContaining({
-          method: 'GET'
+          method: 'GET',
         })
       );
 
@@ -235,9 +235,9 @@ describe('Remote-Only Mode', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-        text: jest.fn().mockResolvedValue('Server Error')
+        text: jest.fn().mockResolvedValue('Server Error'),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       await expect(searchService.search('test query')).rejects.toThrow(
         'Remote search failed: Remote search error: 500 Internal Server Error'
@@ -250,10 +250,10 @@ describe('Remote-Only Mode', () => {
         status: 200,
         json: jest.fn().mockResolvedValue({
           results: [],
-          total_count: 0
-        })
+          total_count: 0,
+        }),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       await searchService.search('test', {
         limit: 20,
@@ -261,25 +261,25 @@ describe('Remote-Only Mode', () => {
         sections: ['feelings', 'project_notes'],
         dateRange: {
           start: new Date('2024-01-01'),
-          end: new Date('2024-12-31')
-        }
+          end: new Date('2024-12-31'),
+        },
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
         'https://api.example.com/teams/test-team/journal/search',
         expect.objectContaining({
-          body: expect.stringContaining('"limit":20')
+          body: expect.stringContaining('"limit":20'),
         })
       );
 
-      const requestBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const requestBody = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
       expect(requestBody).toEqual({
         query: 'test',
         limit: 20,
         similarity_threshold: 0.8,
         sections: ['feelings', 'project_notes'],
         date_from: '2024-01-01T00:00:00.000Z',
-        date_to: '2024-12-31T00:00:00.000Z'
+        date_to: '2024-12-31T00:00:00.000Z',
       });
     });
   });
@@ -305,9 +305,9 @@ describe('Remote-Only Mode', () => {
       const mockResponse = {
         ok: true,
         status: 200,
-        json: jest.fn().mockRejectedValue(new Error('Invalid JSON'))
+        json: jest.fn().mockRejectedValue(new Error('Invalid JSON')),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       await expect(searchService.search('test')).rejects.toThrow(
         'Remote search failed: Invalid JSON'
@@ -328,13 +328,13 @@ describe('Remote-Only Mode', () => {
               similarity_score: 0.9,
               timestamp: 1717160645123,
               created_at: '2024-05-31T14:30:45.123Z',
-              content: 'This is a simple content entry'
-            }
+              content: 'This is a simple content entry',
+            },
           ],
-          total_count: 1
-        })
+          total_count: 1,
+        }),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       const results = await searchService.search('simple content');
 
@@ -355,18 +355,20 @@ describe('Remote-Only Mode', () => {
               created_at: '2024-05-31T14:30:45.123Z',
               sections: {
                 feelings: 'I feel excited',
-                project_notes: 'Working on new feature'
-              }
-            }
+                project_notes: 'Working on new feature',
+              },
+            },
           ],
-          total_count: 1
-        })
+          total_count: 1,
+        }),
       };
-      mockFetch.mockResolvedValue(mockResponse as any);
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
       const results = await searchService.search('excited feature');
 
-      expect(results[0].text).toBe('## Feelings\n\nI feel excited\n\n## Project Notes\n\nWorking on new feature');
+      expect(results[0].text).toBe(
+        '## Feelings\n\nI feel excited\n\n## Project Notes\n\nWorking on new feature'
+      );
       expect(results[0].sections).toEqual([]);
     });
   });

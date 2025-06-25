@@ -1,9 +1,8 @@
 // ABOUTME: Local embedding service using transformers for semantic journal search
 // ABOUTME: Provides text embedding generation and similarity computation utilities
 
-import { pipeline, FeatureExtractionPipeline } from '@xenova/transformers';
-import * as fs from 'fs/promises';
-import * as path from 'path';
+import * as fs from 'node:fs/promises';
+import { type FeatureExtractionPipeline, pipeline } from '@xenova/transformers';
 
 export interface EmbeddingData {
   embedding: number[];
@@ -14,7 +13,7 @@ export interface EmbeddingData {
 }
 
 export class EmbeddingService {
-  private static instance: EmbeddingService;
+  private static instance: EmbeddingService | null = null;
   private extractor: FeatureExtractionPipeline | null = null;
   private readonly modelName: string;
   private initPromise: Promise<void> | null = null;
@@ -55,7 +54,7 @@ export class EmbeddingService {
   }
 
   static resetInstance(): void {
-    EmbeddingService.instance = null as any;
+    EmbeddingService.instance = null;
   }
 
   async generateEmbedding(text: string): Promise<number[]> {
@@ -110,7 +109,11 @@ export class EmbeddingService {
       const content = await fs.readFile(embeddingPath, 'utf8');
       return JSON.parse(content);
     } catch (error) {
-      if ((error as any)?.code === 'ENOENT') {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        (error as NodeJS.ErrnoException).code === 'ENOENT'
+      ) {
         return null; // File doesn't exist
       }
       throw error;
@@ -125,7 +128,7 @@ export class EmbeddingService {
     const sections: string[] = [];
     const sectionMatches = withoutFrontmatter.match(/^## (.+)$/gm);
     if (sectionMatches) {
-      sections.push(...sectionMatches.map(match => match.replace('## ', '')));
+      sections.push(...sectionMatches.map((match) => match.replace('## ', '')));
     }
 
     // Clean up markdown for embedding
@@ -136,7 +139,7 @@ export class EmbeddingService {
 
     return {
       text: cleanText,
-      sections
+      sections,
     };
   }
 }
