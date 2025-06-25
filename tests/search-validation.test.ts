@@ -88,21 +88,18 @@ describe('SearchService Input Validation', () => {
     });
 
     it('should handle null and undefined search options', async () => {
-      // @ts-expect-error - Testing invalid input
-      const results1 = await searchService.search('test', null);
+      const results1 = await searchService.search('test', null as any);
       expect(Array.isArray(results1)).toBe(true);
 
-      const results2 = await searchService.search('test', undefined);
+      const results2 = await searchService.search('test', undefined as any);
       expect(Array.isArray(results2)).toBe(true);
     });
 
     it('should handle malformed date objects in date range', async () => {
       const results = await searchService.search('test query', {
         dateRange: {
-          // @ts-expect-error - Testing invalid input
-          start: 'not a date',
-          // @ts-expect-error - Testing invalid input
-          end: 'also not a date',
+          start: 'not a date' as any,
+          end: 'also not a date' as any,
         },
       });
       expect(Array.isArray(results)).toBe(true);
