@@ -428,4 +428,157 @@ describe('Remote Journal Posting', () => {
       );
     });
   });
+
+  // Issue 3: Missing Tests for Error Handling in Remote-Only Mode
+  describe('Remote-Only Mode Error Handling', () => {
+    const remoteOnlyConfig: RemoteConfig = {
+      serverUrl: 'https://api.example.com',
+      teamId: 'test-team',
+      apiKey: 'test-key',
+      enabled: true,
+      remoteOnly: true,
+    };
+
+    it('should handle network timeout errors in remote-only mode', async () => {
+      mockFetch.mockImplementation(() => {
+        return new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Network timeout')), 50);
+        });
+      });
+
+      const payload: RemoteJournalPayload = {
+        team_id: 'test-team',
+        timestamp: Date.now(),
+        content: 'Test entry',
+      };
+
+      await expect(postToRemoteServer(remoteOnlyConfig, payload)).rejects.toThrow(
+        'Network timeout'
+      );
+    });
+
+    it('should handle malformed JSON responses in remote-only mode', async () => {
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        text: jest.fn().mockResolvedValue('Not valid JSON'),
+        json: jest.fn().mockRejectedValue(new SyntaxError('Unexpected token')),
+      };
+
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
+
+      const payload: RemoteJournalPayload = {
+        team_id: 'test-team',
+        timestamp: Date.now(),
+        content: 'Test entry',
+      };
+
+      // This should still succeed as we don't parse the JSON response for posting
+      await expect(postToRemoteServer(remoteOnlyConfig, payload)).resolves.not.toThrow();
+    });
+  });
+
+  // Issue 9: Missing Tests for Environment Variable Configuration
+  describe('Environment Variable Configuration', () => {
+    it('should handle all environment variable configurations', () => {
+      // Test with all variables set
+      process.env.REMOTE_JOURNAL_SERVER_URL = 'https://api.example.com';
+      process.env.REMOTE_JOURNAL_TEAMID = 'team1';
+      process.env.REMOTE_JOURNAL_APIKEY = 'key1';
+      process.env.REMOTE_JOURNAL_ONLY = 'true';
+
+      let config = createRemoteConfig();
+      expect(config).toEqual({
+        serverUrl: 'https://api.example.com',
+        teamId: 'team1',
+        apiKey: 'key1',
+        enabled: true,
+        remoteOnly: true,
+      });
+
+      // Test with REMOTE_JOURNAL_ONLY=false
+      process.env.REMOTE_JOURNAL_ONLY = 'false';
+      config = createRemoteConfig();
+      expect(config?.remoteOnly).toBe(false);
+
+      // Test with REMOTE_JOURNAL_ONLY as invalid value (should default to false)
+      process.env.REMOTE_JOURNAL_ONLY = 'invalid';
+      config = createRemoteConfig();
+      expect(config?.remoteOnly).toBe(false);
+
+      // Test with missing SERVER_URL
+      delete process.env.REMOTE_JOURNAL_SERVER_URL;
+      config = createRemoteConfig();
+      expect(config).toBeUndefined();
+
+      // Test with empty values
+      process.env.REMOTE_JOURNAL_SERVER_URL = '';
+      process.env.REMOTE_JOURNAL_TEAMID = 'team1';
+      process.env.REMOTE_JOURNAL_APIKEY = 'key1';
+      config = createRemoteConfig();
+      expect(config).toBeUndefined();
+
+      // Reset env vars
+      delete process.env.REMOTE_JOURNAL_SERVER_URL;
+      delete process.env.REMOTE_JOURNAL_TEAMID;
+      delete process.env.REMOTE_JOURNAL_APIKEY;
+      delete process.env.REMOTE_JOURNAL_ONLY;
+    });
+  });
+
+  // Issue 10: Missing Tests for Debug Logging
+  describe('Debug Logging', () => {
+    let originalConsoleError: typeof console.error;
+
+    beforeEach(() => {
+      originalConsoleError = console.error;
+    });
+
+    afterEach(() => {
+      console.error = originalConsoleError;
+      delete process.env.JOURNAL_DEBUG;
+    });
+
+    it('should trigger debug logging when JOURNAL_DEBUG environment variable is set', async () => {
+      const mockConsoleError = jest.fn();
+      console.error = mockConsoleError;
+
+      // Enable debug logging
+      process.env.JOURNAL_DEBUG = 'true';
+
+      // Mock fetch to return success
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        text: jest.fn().mockResolvedValue('Success'),
+        json: jest.fn().mockResolvedValue({}),
+      };
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
+
+      const payload: RemoteJournalPayload = {
+        team_id: 'test-team',
+        timestamp: Date.now(),
+        content: 'Debug test',
+      };
+
+      await postToRemoteServer(mockConfig, payload);
+
+      // Verify debug logs were called
+      expect(mockConsoleError).toHaveBeenCalledWith('=== REMOTE POST DEBUG ===');
+      expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('URL:'));
+      expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('Headers:'));
+      expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('Payload size:'));
+
+      // Repeat with debug disabled
+      mockConsoleError.mockClear();
+      process.env.JOURNAL_DEBUG = 'false';
+
+      await postToRemoteServer(mockConfig, payload);
+
+      // Verify debug logs were not called
+      expect(mockConsoleError).not.toHaveBeenCalledWith('=== REMOTE POST DEBUG ===');
+    });
+  });
 });

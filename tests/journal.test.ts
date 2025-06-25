@@ -331,4 +331,70 @@ describe('JournalManager', () => {
       await fs.rm(customUserDir, { recursive: true, force: true });
     }
   });
+
+  // Issue 1: Missing Tests for File System Permission Handling
+  test('handles permission denied errors when creating directory', async () => {
+    const mockMkdir = jest.spyOn(fs, 'mkdir').mockRejectedValue(Object.assign(
+      new Error('EACCES: permission denied'),
+      { code: 'EACCES' }
+    ));
+
+    try {
+      await expect(journalManager.writeEntry('test')).rejects.toThrow('Failed to create journal directory');
+    } finally {
+      mockMkdir.mockRestore();
+    }
+  });
+
+  test('handles permission denied errors when writing file', async () => {
+    const mockMkdir = jest.spyOn(fs, 'mkdir').mockResolvedValue(undefined);
+    const mockWriteFile = jest.spyOn(fs, 'writeFile').mockRejectedValue(Object.assign(
+      new Error('EACCES: permission denied'),
+      { code: 'EACCES' }
+    ));
+
+    try {
+      await expect(journalManager.writeEntry('test')).rejects.toThrow('permission denied');
+    } finally {
+      mockMkdir.mockRestore();
+      mockWriteFile.mockRestore();
+    }
+  });
+
+  // Issue 2: Missing Tests for Edge Cases in Timestamp Generation
+  test('generates unique timestamps even for rapid sequential calls', async () => {
+    const timestamps: string[] = [];
+    const journalManagerPrivate = journalManager as any;
+    
+    for (let i = 0; i < 100; i++) {
+      const timestamp = journalManagerPrivate.formatTimestamp(new Date());
+      timestamps.push(timestamp);
+    }
+
+    const uniqueTimestamps = new Set(timestamps);
+    expect(uniqueTimestamps.size).toBe(timestamps.length);
+  });
+
+  // Issue 7: Missing Tests for Concurrent Journal Operations
+  test('handles concurrent journal write operations correctly', async () => {
+    const operations: Promise<void>[] = [];
+    const numberOfOperations = 10;
+
+    for (let i = 0; i < numberOfOperations; i++) {
+      operations.push(journalManager.writeEntry(`Concurrent entry ${i}`));
+    }
+
+    await Promise.all(operations);
+
+    const today = new Date();
+    const dateString = getFormattedDate(today);
+    const dayDir = path.join(projectTempDir, dateString);
+    const files = await fs.readdir(dayDir);
+
+    const mdFiles = files.filter(f => f.endsWith('.md'));
+    expect(mdFiles.length).toBeGreaterThanOrEqual(numberOfOperations);
+
+    const uniqueTimestamps = new Set(mdFiles.map(f => f.split('.')[0]));
+    expect(uniqueTimestamps.size).toBe(mdFiles.length);
+  });
 });
