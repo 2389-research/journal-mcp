@@ -21,6 +21,32 @@ A comprehensive MCP (Model Context Protocol) server that provides Claude with pr
 - **Fast operation**: Optimized file structure and in-memory similarity calculations
 - **Robust fallbacks**: Intelligent path resolution across platforms
 
+## Tech Stack
+
+### Core Technologies
+- **Node.js 18+** - Runtime environment with modern JavaScript features
+- **TypeScript 5.0+** - Type-safe development with strict configuration
+- **MCP SDK 0.4.0** - Official Model Context Protocol implementation
+- **@xenova/transformers** - Local AI models for semantic embeddings (no external APIs)
+
+### AI & Search
+- **Semantic Embeddings** - Multiple model options (MiniLM, DistilRoBERTa, MPNet)
+- **Vector Similarity** - Local cosine similarity calculations
+- **Natural Language Search** - Query understanding without external services
+
+### Development & Quality
+- **Jest** - Comprehensive testing framework with mocks
+- **Biome** - Modern linting and formatting
+- **Oxlint** - Additional code quality checks
+- **GitHub Actions** - Continuous integration and testing
+
+### Storage & Architecture
+- **Markdown + YAML** - Human-readable entries with structured metadata
+- **Hierarchical File System** - Date-based organization with microsecond precision
+- **Cross-Platform** - Windows, macOS, and Linux support
+
+For detailed architectural decisions, see [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ## Installation
 
 ```bash
@@ -262,6 +288,23 @@ To help Claude learn and improve over time, consider adding journal usage guidan
 ```
 
 This enables Claude to build persistent memory across conversations, leading to better engineering decisions and collaboration patterns.
+
+## Documentation
+
+### Comprehensive Guides
+- **[Architecture & Design Decisions](ARCHITECTURE.md)** - Technical architecture, design patterns, and key decisions
+- **[Contributing Guidelines](CONTRIBUTING.md)** - Development setup, code style, testing, and contribution process
+- **[Roadmap & Development Priorities](ROADMAP.md)** - Current status, planned features, and future direction
+
+### API Reference
+- **[docs/spec.md](docs/spec.md)** - Original MCP server specification
+- **[docs/backend-api-spec.md](docs/backend-api-spec.md)** - Remote server API documentation
+- **[docs/implementation-plan.md](docs/implementation-plan.md)** - Development history and implementation details
+
+### Getting Help
+- **Issues**: [GitHub Issues](https://github.com/2389-research/journal-mcp/issues) for bugs and feature requests
+- **Discussions**: [GitHub Discussions](https://github.com/2389-research/journal-mcp/discussions) for questions and community chat
+- **MCP Protocol**: [Model Context Protocol Documentation](https://modelcontextprotocol.io/)
 
 ## Author
 
