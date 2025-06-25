@@ -25,6 +25,10 @@ describe('Embedding Service Failures', () => {
     // Aggressive cleanup to prevent spy conflicts
     aggressiveCleanup();
 
+    // Clear all mocks to prevent conflicts
+    jest.clearAllMocks();
+    jest.restoreAllMocks();
+
     projectTempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'journal-project-embedding-test-'));
     userTempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'journal-user-embedding-test-'));
 
