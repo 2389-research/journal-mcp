@@ -554,6 +554,7 @@ describe('Remote Journal Posting', () => {
         statusText: 'OK',
         text: jest.fn().mockResolvedValue('Success'),
         json: jest.fn().mockResolvedValue({}),
+        headers: new Map([['content-type', 'application/json']]),
       };
       mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
@@ -567,9 +568,12 @@ describe('Remote Journal Posting', () => {
 
       // Verify debug logs were called
       expect(mockConsoleError).toHaveBeenCalledWith('=== REMOTE POST DEBUG ===');
-      expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('URL:'));
-      expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('Headers:'));
-      expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('Payload size:'));
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        'URL:',
+        'https://api.example.com/teams/test-team/journal/entries'
+      );
+      expect(mockConsoleError).toHaveBeenCalledWith('Headers:', expect.any(Object));
+      expect(mockConsoleError).toHaveBeenCalledWith('Payload size:', expect.any(Number), 'bytes');
 
       // Repeat with debug disabled
       mockConsoleError.mockClear();

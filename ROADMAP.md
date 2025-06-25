@@ -306,5 +306,5 @@ For more information on contributing, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
-**Last Updated**: June 2025  
+**Last Updated**: June 2025
 **Next Review**: Quarterly roadmap review process

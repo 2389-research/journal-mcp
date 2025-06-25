@@ -17,6 +17,6 @@ module.exports = {
   coverageReporters: ['text', 'lcov'],
   testTimeout: 60000,
   transformIgnorePatterns: [
-    'node_modules/(?!(node-fetch)/)'
+    'node_modules/(?!(node-fetch|@modelcontextprotocol)/)'
   ],
 };

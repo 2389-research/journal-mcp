@@ -4,22 +4,25 @@
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { SearchService } from '../src/search';
-
 // Use the EmbeddingService mock to avoid conflicts with global setup
 import { EmbeddingService } from '../src/embeddings';
+import { SearchService } from '../src/search';
 
 describe('SearchService Input Validation', () => {
   let tempDir: string;
+  let userTempDir: string;
   let searchService: SearchService;
 
   beforeEach(async () => {
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'search-validation-test-'));
-    searchService = new SearchService(tempDir);
-    
+    userTempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'search-validation-user-test-'));
+    searchService = new SearchService(tempDir, userTempDir);
+
     // Setup mocks for each test
     const mockEmbeddingService = EmbeddingService.getInstance();
-    jest.spyOn(mockEmbeddingService, 'generateEmbedding').mockResolvedValue([0.1, 0.2, 0.3, 0.4, 0.5]);
+    jest
+      .spyOn(mockEmbeddingService, 'generateEmbedding')
+      .mockResolvedValue([0.1, 0.2, 0.3, 0.4, 0.5]);
     jest.spyOn(mockEmbeddingService, 'cosineSimilarity').mockReturnValue(0.8);
     jest.spyOn(mockEmbeddingService, 'extractSearchableText').mockReturnValue({
       text: 'extracted text',
@@ -29,7 +32,10 @@ describe('SearchService Input Validation', () => {
 
   afterEach(async () => {
     await fs.rm(tempDir, { recursive: true, force: true });
+    await fs.rm(userTempDir, { recursive: true, force: true });
     jest.restoreAllMocks();
+    // Reset the EmbeddingService singleton to avoid state leakage
+    (EmbeddingService as any).instance = null;
   });
 
   // Issue 4: Missing Tests for SearchService with Invalid Inputs
@@ -86,7 +92,6 @@ describe('SearchService Input Validation', () => {
       const results1 = await searchService.search('test', null);
       expect(Array.isArray(results1)).toBe(true);
 
-      // @ts-expect-error - Testing invalid input
       const results2 = await searchService.search('test', undefined);
       expect(Array.isArray(results2)).toBe(true);
     });
@@ -143,8 +148,9 @@ describe('SearchService Input Validation', () => {
 
     it('should handle search in non-existent directory', async () => {
       const nonExistentPath = path.join(tempDir, 'does-not-exist');
-      const badSearchService = new SearchService(nonExistentPath);
-      
+      const nonExistentUserPath = path.join(userTempDir, 'does-not-exist');
+      const badSearchService = new SearchService(nonExistentPath, nonExistentUserPath);
+
       const results = await badSearchService.search('test query');
       expect(Array.isArray(results)).toBe(true);
       expect(results.length).toBe(0);
@@ -158,7 +164,7 @@ describe('SearchService Input Validation', () => {
 
       const results = await Promise.all(promises);
       expect(results.length).toBe(10);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(Array.isArray(result)).toBe(true);
       });
     });

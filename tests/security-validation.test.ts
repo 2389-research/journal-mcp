@@ -47,7 +47,9 @@ describe('Security Validation', () => {
       expect(serverPrivate.isPathSafe('/valid/path/../../../root')).toBe(false);
 
       // Windows-style traversal attempts
-      expect(serverPrivate.isPathSafe('C:\\valid\\path\\..\\..\\..\\windows\\system32')).toBe(false);
+      expect(serverPrivate.isPathSafe('C:\\valid\\path\\..\\..\\..\\windows\\system32')).toBe(
+        false
+      );
       expect(serverPrivate.isPathSafe('/valid/path/..\\..\\windows')).toBe(false);
     });
 
@@ -90,7 +92,9 @@ describe('Security Validation', () => {
       expect(serverPrivate.isPathSafe('/valid/path/..%2f..%2fetc%2fpasswd')).toBe(false);
 
       // Unicode traversal attempts
-      expect(serverPrivate.isPathSafe('/valid/path/\u002e\u002e/\u002e\u002e/etc/passwd')).toBe(false);
+      expect(serverPrivate.isPathSafe('/valid/path/\u002e\u002e/\u002e\u002e/etc/passwd')).toBe(
+        false
+      );
 
       // Null byte injection attempts
       expect(serverPrivate.isPathSafe('/valid/path/entry.md\0../../etc/passwd')).toBe(false);
@@ -137,7 +141,9 @@ describe('Security Validation', () => {
     it('should reject URIs with special characters', () => {
       const serverPrivate = server as any;
 
-      expect(serverPrivate.isValidJournalUri('journal://project/<script>alert(1)</script>')).toBe(false);
+      expect(serverPrivate.isValidJournalUri('journal://project/<script>alert(1)</script>')).toBe(
+        false
+      );
       expect(serverPrivate.isValidJournalUri('journal://user/path with spaces')).toBe(false);
       expect(serverPrivate.isValidJournalUri('journal://project/path&query=malicious')).toBe(false);
       expect(serverPrivate.isValidJournalUri('journal://user/path?query=malicious')).toBe(false);
@@ -159,16 +165,22 @@ describe('Security Validation', () => {
       const serverPrivate = server as any;
 
       // URL-encoded malicious content
-      expect(serverPrivate.isValidJournalUri('journal://project/%2e%2e%2f%2e%2e%2fetc%2fpasswd')).toBe(false);
+      expect(
+        serverPrivate.isValidJournalUri('journal://project/%2e%2e%2f%2e%2e%2fetc%2fpasswd')
+      ).toBe(false);
       expect(serverPrivate.isValidJournalUri('journal://user/path%2fto%2fmalicious')).toBe(false);
-      expect(serverPrivate.isValidJournalUri('journal://project/path%00../../etc/passwd')).toBe(false);
+      expect(serverPrivate.isValidJournalUri('journal://project/path%00../../etc/passwd')).toBe(
+        false
+      );
     });
 
     it('should handle unicode and special encoding', () => {
       const serverPrivate = server as any;
 
       // Unicode characters that could be used for attacks
-      expect(serverPrivate.isValidJournalUri('journal://project/\u002e\u002e\u002f\u002e\u002e\u002f')).toBe(false);
+      expect(
+        serverPrivate.isValidJournalUri('journal://project/\u002e\u002e\u002f\u002e\u002e\u002f')
+      ).toBe(false);
       expect(serverPrivate.isValidJournalUri('journal://user/path\u0000injection')).toBe(false);
     });
   });
@@ -185,7 +197,7 @@ describe('Security Validation', () => {
         '/path/with/../traversal/entry.md', // This should be safely encoded
       ];
 
-      testPaths.forEach(testPath => {
+      testPaths.forEach((testPath) => {
         const projectUri = serverPrivate.createJournalUri(testPath, 'project');
         const userUri = serverPrivate.createJournalUri(testPath, 'user');
 
@@ -214,12 +226,12 @@ describe('Security Validation', () => {
         'C:\\Windows\\System32\\config\\SAM',
       ];
 
-      maliciousPaths.forEach(maliciousPath => {
+      maliciousPaths.forEach((maliciousPath) => {
         const uri = serverPrivate.createJournalUri(maliciousPath, 'project');
-        
+
         // The URI should be valid format (safely encoded)
         expect(serverPrivate.isValidJournalUri(uri)).toBe(true);
-        
+
         // But when decoded, it should still be the original malicious path
         // (this is intentional - the encoding is for URI safety, not path validation)
         const encodedPath = uri.split('/')[3];
@@ -237,9 +249,9 @@ describe('Security Validation', () => {
       const mockRequest = {
         params: {
           arguments: {
-            file_path: '../../../etc/passwd'
-          }
-        }
+            file_path: '../../../etc/passwd',
+          },
+        },
       };
 
       // This should throw an error due to path validation

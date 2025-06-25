@@ -52,7 +52,7 @@ export class SearchService {
   }
 
   async search(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
-    const { limit = 10, minScore = 0.1, sections, dateRange, type = 'both' } = options;
+    const { limit = 10, minScore = 0.1, sections, dateRange, type = 'both' } = options || {};
 
     // Use remote search if in remote-only mode
     if (this.remoteConfig?.remoteOnly) {
