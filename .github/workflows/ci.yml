@@ -26,6 +26,9 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
+    - name: Fix Biome permissions
+      run: chmod +x node_modules/@biomejs/cli-linux-x64/biome
+
     - name: Run Biome check
       run: npm run check
 
@@ -49,6 +52,9 @@ jobs:
 
     - name: Install dependencies
       run: npm ci
+
+    - name: Fix Biome permissions
+      run: chmod +x node_modules/@biomejs/cli-linux-x64/biome
 
     - name: Run Biome check
       run: npm run check
