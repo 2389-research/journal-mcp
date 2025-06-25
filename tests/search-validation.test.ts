@@ -6,19 +6,8 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { SearchService } from '../src/search';
 
-// Mock the embedding service
-jest.mock('../src/embeddings', () => ({
-  EmbeddingService: {
-    getInstance: () => ({
-      generateEmbedding: jest.fn().mockResolvedValue([0.1, 0.2, 0.3, 0.4, 0.5]),
-      cosineSimilarity: jest.fn().mockReturnValue(0.8),
-      extractSearchableText: jest.fn().mockReturnValue({
-        text: 'extracted text',
-        sections: ['Feelings'],
-      }),
-    }),
-  },
-}));
+// Use the EmbeddingService mock to avoid conflicts with global setup
+import { EmbeddingService } from '../src/embeddings';
 
 describe('SearchService Input Validation', () => {
   let tempDir: string;
@@ -27,10 +16,20 @@ describe('SearchService Input Validation', () => {
   beforeEach(async () => {
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'search-validation-test-'));
     searchService = new SearchService(tempDir);
+    
+    // Setup mocks for each test
+    const mockEmbeddingService = EmbeddingService.getInstance();
+    jest.spyOn(mockEmbeddingService, 'generateEmbedding').mockResolvedValue([0.1, 0.2, 0.3, 0.4, 0.5]);
+    jest.spyOn(mockEmbeddingService, 'cosineSimilarity').mockReturnValue(0.8);
+    jest.spyOn(mockEmbeddingService, 'extractSearchableText').mockReturnValue({
+      text: 'extracted text',
+      sections: ['Feelings'],
+    });
   });
 
   afterEach(async () => {
     await fs.rm(tempDir, { recursive: true, force: true });
+    jest.restoreAllMocks();
   });
 
   // Issue 4: Missing Tests for SearchService with Invalid Inputs

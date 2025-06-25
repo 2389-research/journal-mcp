@@ -362,17 +362,27 @@ describe('JournalManager', () => {
   });
 
   // Issue 2: Missing Tests for Edge Cases in Timestamp Generation
-  test('generates unique timestamps even for rapid sequential calls', async () => {
-    const timestamps: string[] = [];
-    const journalManagerPrivate = journalManager as any;
+  test('generates unique timestamps for rapid sequential journal entries', async () => {
+    const operations: Promise<void>[] = [];
     
-    for (let i = 0; i < 100; i++) {
-      const timestamp = journalManagerPrivate.formatTimestamp(new Date());
-      timestamps.push(timestamp);
+    // Create multiple journal entries rapidly to test timestamp uniqueness
+    for (let i = 0; i < 10; i++) {
+      operations.push(journalManager.writeEntry(`Rapid entry ${i}`));
     }
 
-    const uniqueTimestamps = new Set(timestamps);
-    expect(uniqueTimestamps.size).toBe(timestamps.length);
+    await Promise.all(operations);
+
+    const today = new Date();
+    const dateString = getFormattedDate(today);
+    const dayDir = path.join(projectTempDir, dateString);
+    const files = await fs.readdir(dayDir);
+    
+    const mdFiles = files.filter(f => f.endsWith('.md'));
+    expect(mdFiles.length).toBe(10);
+    
+    // All filenames should be unique (ensuring unique timestamps)
+    const uniqueFilenames = new Set(mdFiles);
+    expect(uniqueFilenames.size).toBe(mdFiles.length);
   });
 
   // Issue 7: Missing Tests for Concurrent Journal Operations

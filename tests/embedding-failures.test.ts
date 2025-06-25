@@ -42,8 +42,10 @@ describe('Embedding Service Failures', () => {
     await fs.rm(projectTempDir, { recursive: true, force: true });
     await fs.rm(userTempDir, { recursive: true, force: true });
 
-    // Restore all mocks
+    // Restore all mocks and reset singleton
     jest.restoreAllMocks();
+    // Reset the EmbeddingService singleton to avoid state leakage
+    (EmbeddingService as any).instance = null;
   });
 
   // Issue 5: Missing Tests for Embedding Service Failures
