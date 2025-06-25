@@ -13,9 +13,9 @@
     "start": "node dist/index.js",
     "test": "jest",
     "test:watch": "jest --watch",
-    "lint": "npx biome lint src tests",
-    "format": "npx biome format --write src tests",
-    "check": "npx biome check src tests"
+    "lint": "npx @biomejs/biome lint src tests",
+    "format": "npx @biomejs/biome format --write src tests",
+    "check": "npx @biomejs/biome check src tests"
   },
   "keywords": [
     "mcp",
