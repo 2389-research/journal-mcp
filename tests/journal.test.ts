@@ -5,7 +5,7 @@ import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { JournalManager } from '../src/journal';
-import { aggressiveCleanup, safeSpy } from './test-utils';
+import type { TestWithMocks } from './utils/TestWithMocks';
 
 function getFormattedDate(date: Date): string {
   const year = date.getFullYear();
@@ -19,11 +19,9 @@ describe('JournalManager', () => {
   let userTempDir: string;
   let journalManager: JournalManager;
   let originalHome: string | undefined;
+  let mockTest: TestWithMocks;
 
   beforeEach(async () => {
-    // Aggressive cleanup to prevent spy conflicts
-    aggressiveCleanup();
-
     projectTempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'journal-project-test-'));
     userTempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'journal-user-test-'));
 
@@ -44,9 +42,6 @@ describe('JournalManager', () => {
 
     await fs.rm(projectTempDir, { recursive: true, force: true });
     await fs.rm(userTempDir, { recursive: true, force: true });
-
-    // Aggressive cleanup after each test
-    aggressiveCleanup();
   });
 
   test('writes journal entry to correct file structure', async () => {
@@ -339,15 +334,17 @@ describe('JournalManager', () => {
     }
   });
 
-  // Issue 1: Missing Tests for File System Permission Handling
-  // NOTE: These tests are skipped due to Jest spy conflicts that are difficult to resolve.
-  // The core functionality is tested through integration tests instead.
+  // Temporarily skip file system error tests - they need proper mock integration
   test.skip('handles permission denied errors when creating directory', async () => {
-    // Test skipped due to Jest spy conflicts
+    // TODO: Implement with new mock system
   });
 
   test.skip('handles permission denied errors when writing file', async () => {
-    // Test skipped due to Jest spy conflicts
+    // TODO: Implement with new mock system
+  });
+
+  test.skip('handles disk full errors gracefully', async () => {
+    // TODO: Implement with new mock system
   });
 
   // Issue 2: Missing Tests for Edge Cases in Timestamp Generation
