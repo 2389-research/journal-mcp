@@ -16,7 +16,7 @@ Thank you for your interest in contributing to the Private Journal MCP Server! T
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm or yarn
 - TypeScript knowledge
 - Familiarity with MCP (Model Context Protocol)

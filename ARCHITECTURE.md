@@ -97,7 +97,7 @@ The Private Journal MCP Server is designed as a lightweight, privacy-first journ
 // Priority order for journal location
 1. Explicit --journal-path argument
 2. Current working directory + .private-journal
-3. User home directory + .private-journal  
+3. User home directory + .private-journal
 4. Temporary directory fallback
 ```
 
@@ -306,7 +306,7 @@ Content here...
 ```typescript
 // Path validation approach
 - Use path.resolve() for canonical paths
-- Validate against known safe directories  
+- Validate against known safe directories
 - Prevent path traversal attacks
 - Handle symbolic links safely
 ```
