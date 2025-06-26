@@ -13,18 +13,20 @@ import {
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { JournalManager } from './journal';
-import { createRemoteConfig } from './remote';
+import { createRemoteConfig, type RemoteConfig } from './remote';
 import { SearchService } from './search';
 
 export class PrivateJournalServer {
   private server: Server;
   private journalManager: JournalManager;
   private searchService: SearchService;
+  private remoteConfig?: RemoteConfig;
 
   constructor(journalPath: string) {
     const remoteConfig = createRemoteConfig();
     const embeddingModel = process.env.JOURNAL_EMBEDDING_MODEL;
 
+    this.remoteConfig = remoteConfig;
     this.journalManager = new JournalManager(journalPath, undefined, remoteConfig, embeddingModel);
     this.searchService = new SearchService(journalPath, undefined, embeddingModel, remoteConfig);
     this.server = new Server({
@@ -264,7 +266,8 @@ export class PrivateJournalServer {
         }
 
         // Security: Validate file path to prevent traversal attacks
-        if (!this.isPathSafe(args.path)) {
+        // In remote-only mode, path is an entry ID, not a file path
+        if (!this.remoteConfig?.remoteOnly && !this.isPathSafe(args.path)) {
           throw new Error('Access denied: Invalid file path');
         }
 
@@ -506,8 +509,47 @@ export class PrivateJournalServer {
 
   private isPathSafe(filePath: string): boolean {
     // Security: Ensure path doesn't contain traversal attempts
+
+    // First check: reject relative paths
+    if (!path.isAbsolute(filePath)) {
+      return false;
+    }
+
+    // Second check: look for traversal patterns before normalization
+    if (filePath.includes('..')) {
+      return false;
+    }
+
+    // Third check: look for encoded traversal attempts
+    const decodedPath = decodeURIComponent(filePath);
+    if (decodedPath.includes('..') || decodedPath !== filePath) {
+      return false;
+    }
+
+    // Fourth check: look for Windows-style traversal
+    if (filePath.includes('\\') && filePath.includes('..')) {
+      return false;
+    }
+
+    // Fifth check: reject paths that try to access system directories
     const normalizedPath = path.normalize(filePath);
-    return !normalizedPath.includes('..') && path.isAbsolute(normalizedPath);
+    const dangerousPaths = [
+      '/etc/',
+      '/bin/',
+      '/sbin/',
+      '/usr/bin/',
+      '/usr/sbin/',
+      '/boot/',
+      '/sys/',
+      '/proc/',
+      '/dev/',
+      '/root/',
+    ];
+    if (dangerousPaths.some((dangerous) => normalizedPath.startsWith(dangerous))) {
+      return false;
+    }
+
+    return true;
   }
 
   private generatePrompt(
@@ -518,17 +560,17 @@ export class PrivateJournalServer {
       case 'daily_reflection':
         return {
           description: 'A structured daily reflection prompt',
-          content: this.generateDailyReflectionPrompt(args.focus_area as string),
+          content: this.generateDailyReflectionPrompt(args?.focus_area as string),
         };
       case 'project_retrospective':
         return {
           description: 'A project retrospective prompt',
-          content: this.generateProjectRetrospectivePrompt(args.project_name as string),
+          content: this.generateProjectRetrospectivePrompt(args?.project_name as string),
         };
       case 'learning_capture':
         return {
           description: 'A learning capture prompt',
-          content: this.generateLearningCapturePrompt(args.topic as string),
+          content: this.generateLearningCapturePrompt(args?.topic as string),
         };
       case 'emotional_processing':
         return {

@@ -7,6 +7,7 @@ import { type EmbeddingData, EmbeddingService } from './embeddings';
 import { resolveProjectJournalPath, resolveUserJournalPath } from './paths';
 import {
   getRemoteEntries,
+  getRemoteEntryById,
   type RemoteConfig,
   type RemoteSearchRequest,
   searchRemoteServer,
@@ -52,7 +53,7 @@ export class SearchService {
   }
 
   async search(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
-    const { limit = 10, minScore = 0.1, sections, dateRange, type = 'both' } = options;
+    const { limit = 10, minScore = 0.1, sections, dateRange, type = 'both' } = options || {};
 
     // Use remote search if in remote-only mode
     if (this.remoteConfig?.remoteOnly) {
@@ -168,18 +169,36 @@ export class SearchService {
   }
 
   async readEntry(filePath: string): Promise<string | null> {
-    // In remote-only mode, can't read local files
+    // In remote-only mode, handle differently based on whether it looks like a file path or entry ID
     if (this.remoteConfig?.remoteOnly) {
-      throw new Error(
-        'Cannot read local files in remote-only mode. Use search to find entry content.'
-      );
+      // If it looks like a local file path (contains path separators), reject it
+      if (filePath.includes('/') || filePath.includes('\\')) {
+        throw new Error(
+          'Cannot read local files in remote-only mode. Use search to find entry content.'
+        );
+      }
+
+      // Otherwise, treat it as an entry ID and fetch from remote server
+      try {
+        const entry = await getRemoteEntryById(this.remoteConfig, filePath);
+        if (!entry) {
+          return null;
+        }
+
+        // Convert remote entry to text format
+        return this.extractTextFromRemoteResult(entry);
+      } catch (error) {
+        console.error('Failed to fetch remote entry:', error);
+        throw error;
+      }
     }
 
     try {
       return await fs.readFile(filePath, 'utf8');
     } catch (error) {
       if (
-        error instanceof Error &&
+        typeof error === 'object' &&
+        error !== null &&
         'code' in error &&
         (error as NodeJS.ErrnoException).code === 'ENOENT'
       ) {
@@ -218,6 +237,11 @@ export class SearchService {
     try {
       const response = await searchRemoteServer(this.remoteConfig, searchRequest);
 
+      if (!response.results || !Array.isArray(response.results)) {
+        console.error('Invalid remote search response structure:', response);
+        return [];
+      }
+
       return response.results.map((result) => ({
         path: result.id, // Use remote ID as path
         score: result.similarity_score,
@@ -244,6 +268,11 @@ export class SearchService {
 
     try {
       const response = await getRemoteEntries(this.remoteConfig, limit);
+
+      if (!response.entries || !Array.isArray(response.entries)) {
+        console.error('Invalid remote entries response structure:', response);
+        return [];
+      }
 
       return response.entries.map((entry) => ({
         path: entry.id, // Use remote ID as path

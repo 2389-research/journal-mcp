@@ -263,6 +263,75 @@ export async function getRemoteEntries(
   }
 }
 
+export async function getRemoteEntryById(
+  config: RemoteConfig,
+  entryId: string
+): Promise<RemoteSearchResult | null> {
+  if (!config.enabled) {
+    throw new Error('Remote server not configured');
+  }
+
+  const debug = process.env.JOURNAL_DEBUG === 'true';
+  const url = `${config.serverUrl}/teams/${config.teamId}/journal/entries/${entryId}`;
+
+  if (debug) {
+    console.error('=== REMOTE ENTRY BY ID DEBUG ===');
+    console.error('URL:', url);
+    console.error('Entry ID:', entryId);
+  }
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'X-API-Key': config.apiKey,
+      },
+    });
+
+    if (debug) {
+      console.error('Entry response status:', response.status, response.statusText);
+    }
+
+    if (response.status === 404) {
+      if (debug) {
+        console.error('Entry not found on remote server');
+        console.error('=== END REMOTE ENTRY BY ID DEBUG ===');
+      }
+      return null;
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      if (debug) {
+        console.error('Entry error response:', errorText);
+        console.error('=== END REMOTE ENTRY BY ID DEBUG ===');
+      }
+      throw new Error(
+        `Remote entry fetch error: ${response.status} ${response.statusText} - ${errorText}`
+      );
+    }
+
+    const data = (await response.json()) as RemoteSearchResult;
+    if (debug) {
+      console.error('Entry response data:', JSON.stringify(data, null, 2));
+      console.error('=== END REMOTE ENTRY BY ID DEBUG ===');
+    }
+
+    return data;
+  } catch (error) {
+    if (debug) {
+      console.error('=== REMOTE ENTRY BY ID ERROR ===');
+      console.error('Error details:', error);
+      console.error('=== END REMOTE ENTRY BY ID ERROR ===');
+    }
+    console.error(
+      'Remote entry fetch failed:',
+      error instanceof Error ? error.message : String(error)
+    );
+    throw error;
+  }
+}
+
 export function createRemoteConfig(): RemoteConfig | undefined {
   const serverUrl = process.env.REMOTE_JOURNAL_SERVER_URL;
   const teamId = process.env.REMOTE_JOURNAL_TEAMID;
