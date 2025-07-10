@@ -19,4 +19,9 @@ module.exports = {
   transformIgnorePatterns: [
     'node_modules/(?!(node-fetch|@modelcontextprotocol)/)'
   ],
+  transform: {
+    '^.+\.ts$': ['ts-jest', {
+      tsconfig: 'tests/tsconfig.json'
+    }]
+  }
 };
