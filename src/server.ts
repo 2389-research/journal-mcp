@@ -27,10 +27,19 @@ export class PrivateJournalServer {
 
     this.journalManager = new JournalManager(journalPath, undefined, remoteConfig, embeddingModel);
     this.searchService = new SearchService(journalPath, undefined, embeddingModel, remoteConfig);
-    this.server = new Server({
-      name: 'private-journal-mcp',
-      version: '1.2.0',
-    });
+    this.server = new Server(
+      {
+        name: 'private-journal-mcp',
+        version: '1.2.0',
+      },
+      {
+        capabilities: {
+          tools: {},
+          resources: {},
+          prompts: {},
+        },
+      }
+    );
 
     if (remoteConfig?.enabled) {
       console.error(`Remote journal posting enabled: ${remoteConfig.serverUrl}`);
