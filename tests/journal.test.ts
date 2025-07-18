@@ -19,7 +19,7 @@ describe('JournalManager', () => {
   let userTempDir: string;
   let journalManager: JournalManager;
   let originalHome: string | undefined;
-  let mockTest: TestWithMocks;
+  let _mockTest: TestWithMocks;
 
   beforeEach(async () => {
     projectTempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'journal-project-test-'));

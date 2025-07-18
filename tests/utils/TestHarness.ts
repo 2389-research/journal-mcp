@@ -4,12 +4,7 @@
 import { EmbeddingMock } from '../mocks/EmbeddingMock';
 import { FileSystemMock } from '../mocks/FileSystemMock';
 import { HttpMock } from '../mocks/HttpMock';
-import {
-  globalEmbeddingMock,
-  globalFileSystemMock,
-  globalHttpMock,
-  injectMocksIntoGlobals,
-} from '../setup-enhanced';
+import { injectMocksIntoGlobals } from '../setup-enhanced';
 
 export class TestHarness {
   private fileSystemMock: FileSystemMock;

@@ -6,7 +6,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { JournalManager } from '../src/journal';
 import { PrivateJournalServer } from '../src/server';
-import { aggressiveCleanup, safeSpy } from './test-utils';
+import { aggressiveCleanup } from './test-utils';
 
 function getFormattedDate(date: Date): string {
   const year = date.getFullYear();
@@ -176,7 +176,7 @@ describe('MCP Resources and Prompts', () => {
       const files = await fs.readdir(dayDir);
       const mdFile = files.find((f) => f.endsWith('.md'));
       if (!mdFile) throw new Error('No .md file found');
-      const filePath = path.join(dayDir, mdFile);
+      const _filePath = path.join(dayDir, mdFile);
 
       // NOTE: This test is modified to avoid Jest spy conflicts
       // Instead of mocking fs.readFile, we'll test with an invalid path

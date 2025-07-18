@@ -30,8 +30,14 @@ jobs:
     - name: Run tests
       run: npm test
 
-    - name: Run Biome check
-      run: npm run check
+    - name: Run oxlint
+      run: npm run lint
+
+    - name: Check Biome formatting
+      run: npx biome format --check
+
+    - name: TypeScript type check
+      run: npx tsc --noEmit
 
     - name: Build project
       run: npm run build

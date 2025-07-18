@@ -21,7 +21,7 @@ export function aggressiveCleanup(): void {
     if (fsMethod && typeof fsMethod.mockRestore === 'function') {
       try {
         fsMethod.mockRestore();
-      } catch (e) {
+      } catch {
         // Ignore if already restored
       }
     }
@@ -116,7 +116,7 @@ export function safeSpy<T extends keyof typeof fs>(
   if (fsMethod && typeof fsMethod.mockRestore === 'function') {
     try {
       fsMethod.mockRestore();
-    } catch (e) {
+    } catch {
       // Ignore if already restored
     }
   }
