@@ -8,6 +8,8 @@ import path from 'path';
 import { EmbeddingService } from '../src/embeddings';
 import { JournalManager } from '../src/journal';
 import { resolveProjectJournalPath, resolveUserJournalPath } from '../src/paths';
+import { SearchService } from '../src/search';
+import { PrivateJournalServer } from '../src/server';
 
 // Mock transformers
 jest.mock('@xenova/transformers', () => ({
@@ -335,6 +337,273 @@ Working on tests.
       expect(result.text).toContain("I'm feeling great!");
       expect(result.text).toContain('Working on tests.');
       expect(result.sections).toBeDefined();
+    });
+  });
+
+  describe('MCP server tool validation', () => {
+    it('should handle mixed valid and invalid types for process_thoughts', async () => {
+      const server = new PrivateJournalServer(tempDir);
+      const serverAny = server as any;
+      const mockWriteThoughts = jest
+        .spyOn(JournalManager.prototype, 'writeThoughts')
+        .mockResolvedValue();
+
+      const invalidTypes = [123, true, {}, [], null];
+
+      for (const invalidType of invalidTypes) {
+        const request = {
+          params: {
+            name: 'process_thoughts',
+            arguments: {
+              feelings: invalidType,
+              project_notes: 'Valid notes', // This valid string should allow the request to succeed
+            },
+          },
+        };
+
+        // Should not throw since project_notes is valid
+        await serverAny.server.requestHandlers.get('tools/call')(request);
+
+        // Should have been called with only the valid field
+        expect(mockWriteThoughts).toHaveBeenCalledWith({
+          feelings: undefined,
+          project_notes: 'Valid notes',
+          user_context: undefined,
+          technical_insights: undefined,
+          world_knowledge: undefined,
+        });
+        mockWriteThoughts.mockClear();
+      }
+
+      mockWriteThoughts.mockRestore();
+    });
+
+    it('should handle empty arguments for process_thoughts', async () => {
+      const server = new PrivateJournalServer(tempDir);
+      const serverAny = server as any;
+
+      const request = {
+        params: {
+          name: 'process_thoughts',
+          arguments: {},
+        },
+      };
+
+      await expect(async () => {
+        await serverAny.server.requestHandlers.get('tools/call')(request);
+      }).rejects.toThrow('At least one thought category must be provided');
+    });
+
+    it('should handle process_feelings backward compatibility', async () => {
+      const server = new PrivateJournalServer(tempDir);
+      const journalManagerSpy = jest
+        .spyOn(JournalManager.prototype, 'writeEntry')
+        .mockResolvedValue(undefined);
+      const serverAny = server as any;
+
+      const request = {
+        params: {
+          name: 'process_feelings',
+          arguments: {
+            diary_entry: 'This is a backward compatibility test',
+          },
+        },
+      };
+
+      const response = await serverAny.server.requestHandlers.get('tools/call')(request);
+
+      expect(journalManagerSpy).toHaveBeenCalledWith('This is a backward compatibility test');
+      expect(response.content[0].text).toBe('Journal entry recorded successfully.');
+
+      const invalidRequest = {
+        params: {
+          name: 'process_feelings',
+          arguments: {},
+        },
+      };
+
+      await expect(async () => {
+        await serverAny.server.requestHandlers.get('tools/call')(invalidRequest);
+      }).rejects.toThrow('diary_entry is required and must be a string');
+
+      journalManagerSpy.mockRestore();
+    });
+
+    it('should handle special characters in search queries', async () => {
+      const server = new PrivateJournalServer(tempDir);
+      const searchSpy = jest.spyOn(SearchService.prototype, 'search').mockResolvedValue([]);
+      const serverAny = server as any;
+
+      const specialQueries = [
+        'emoji search 🔍 test 🚀',
+        'unicode characters こんにちは 你好 مرحبا',
+        'HTML tags <script>alert("test")</script>',
+        'SQL injection; DROP TABLE users;',
+        'quotes "double" and \'single\'',
+        'path traversal ../../../etc/passwd',
+        'null character test\0hidden',
+      ];
+
+      for (const query of specialQueries) {
+        const request = {
+          params: {
+            name: 'search_journal',
+            arguments: {
+              query: query,
+            },
+          },
+        };
+
+        await serverAny.server.requestHandlers.get('tools/call')(request);
+        expect(searchSpy).toHaveBeenCalledWith(query, expect.anything());
+        searchSpy.mockClear();
+      }
+
+      searchSpy.mockRestore();
+    });
+
+    it('should handle unexpected exceptions gracefully', async () => {
+      const server = new PrivateJournalServer(tempDir);
+      const serverAny = server as any;
+
+      jest.spyOn(JournalManager.prototype, 'writeEntry').mockImplementationOnce(() => {
+        throw new Error('Unexpected error');
+      });
+
+      const request = {
+        params: {
+          name: 'process_feelings',
+          arguments: {
+            diary_entry: 'Test entry',
+          },
+        },
+      };
+
+      await expect(async () => {
+        await serverAny.server.requestHandlers.get('tools/call')(request);
+      }).rejects.toThrow('Failed to write journal entry: Unexpected error');
+
+      jest.spyOn(JournalManager.prototype, 'writeEntry').mockImplementationOnce(() => {
+        throw 'String error';
+      });
+
+      await expect(async () => {
+        await serverAny.server.requestHandlers.get('tools/call')(request);
+      }).rejects.toThrow('Failed to write journal entry: Unknown error occurred');
+    });
+
+    it('should reject unknown tool names', async () => {
+      const server = new PrivateJournalServer(tempDir);
+      const serverAny = server as any;
+
+      const request = {
+        params: {
+          name: 'non_existent_tool',
+          arguments: {},
+        },
+      };
+
+      await expect(async () => {
+        await serverAny.server.requestHandlers.get('tools/call')(request);
+      }).rejects.toThrow('Unknown tool: non_existent_tool');
+    });
+
+    it('should validate parameters for list_recent_entries', async () => {
+      const server = new PrivateJournalServer(tempDir);
+      const searchServiceSpy = jest
+        .spyOn(SearchService.prototype, 'listRecent')
+        .mockResolvedValue([]);
+      const serverAny = server as any;
+
+      // Test with default parameters
+      const request = {
+        params: {
+          name: 'list_recent_entries',
+          arguments: {},
+        },
+      };
+
+      await serverAny.server.requestHandlers.get('tools/call')(request);
+
+      expect(searchServiceSpy).toHaveBeenCalledWith({
+        limit: 10,
+        type: 'both',
+        dateRange: { start: expect.any(Date) },
+      });
+
+      // Test with invalid parameters that should use defaults
+      const invalidRequest = {
+        params: {
+          name: 'list_recent_entries',
+          arguments: {
+            limit: -10,
+            type: 'invalid-type',
+            days: 'not-a-number',
+          },
+        },
+      };
+
+      await serverAny.server.requestHandlers.get('tools/call')(invalidRequest);
+
+      searchServiceSpy.mockRestore();
+    });
+  });
+
+  describe('Security and path validation', () => {
+    it('should defend against path traversal attacks', async () => {
+      const server = new PrivateJournalServer(tempDir);
+      const serverAny = server as any;
+
+      const traversalPatterns = [
+        '/tmp/../etc/passwd',
+        '/tmp/../../etc/passwd',
+        './relative/path',
+        '../relative/path',
+        '../../etc/passwd',
+        'relative/path',
+        '/tmp/./././../etc/passwd',
+        'C:\\Windows\\System32\\config.sys',
+        '/etc/passwd',
+        '/bin/bash',
+        '/usr/bin/python',
+        '/dev/null',
+        '/proc/self/environ',
+        '/root/.ssh/id_rsa',
+      ];
+
+      for (const pattern of traversalPatterns) {
+        expect(serverAny.isPathSafe(pattern)).toBe(false);
+      }
+
+      const safePaths = [
+        '/home/user/journal/entry.md',
+        '/tmp/journal/entry.md',
+        '/var/data/journal/entry.md',
+        '/opt/journal/entry.md',
+      ];
+
+      for (const safePath of safePaths) {
+        expect(serverAny.isPathSafe(safePath)).toBe(true);
+      }
+    });
+
+    it('should reject invalid URIs in readJournalResource', async () => {
+      const server = new PrivateJournalServer(tempDir);
+      const serverAny = server as any;
+
+      const invalidUris = [
+        'file:///etc/passwd',
+        'http://malicious.example.com',
+        'https://evil.example.com',
+        'journal://admin/../../etc/passwd',
+        'journal://system/etc/passwd',
+        'journalx://project/abc123',
+        'journal://project/',
+      ];
+
+      for (const uri of invalidUris) {
+        await expect(serverAny.readJournalResource(uri)).rejects.toThrow();
+      }
     });
   });
 });
