@@ -1,5 +1,8 @@
 # Private Journal MCP Server
 
+[![Test Coverage](https://github.com/2389-research/journal-mcp/actions/workflows/coverage.yml/badge.svg)](https://github.com/2389-research/journal-mcp/actions/workflows/coverage.yml)
+[![Coverage](https://img.shields.io/badge/coverage-86.8%25-brightgreen)](https://github.com/2389-research/journal-mcp/actions)
+
 A comprehensive MCP (Model Context Protocol) server that provides Claude with private journaling and semantic search capabilities for processing thoughts, feelings, and insights.
 
 ## Features
