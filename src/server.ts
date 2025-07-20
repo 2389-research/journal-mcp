@@ -31,7 +31,7 @@ export class PrivateJournalServer {
     this.searchService = new SearchService(journalPath, undefined, embeddingModel, remoteConfig);
     this.server = new Server({
       name: 'private-journal-mcp',
-      version: '1.2.0',
+      version: '1.3.0',
     });
 
     if (remoteConfig?.enabled) {
