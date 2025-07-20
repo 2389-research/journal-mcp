@@ -1,448 +1,537 @@
-I'll analyze the code and write a list of missing test cases that would help improve the test coverage of this private journal MCP server.
+I'll analyze the codebase and identify missing test cases that should be added to ensure comprehensive coverage. Here are the key issues:
 
-# Missing Test Cases
+# GitHub Issue: Missing tests for format validation in process_thoughts tool
 
-## Issue 1: Missing Tests for File System Permission Handling
-**Description:** There are no comprehensive tests for file system permission errors when writing journal entries.
+## Description
+The `process_thoughts` tool validates input arguments, but there are no specific tests for format validation and error handling with malformed inputs.
 
-**Recommendation:** Add tests that simulate permission denied errors for directories and files.
+## Recommendation
+Add tests to ensure the tool properly validates all input fields and handles malformed input gracefully.
 
-```
-test('handles permission denied errors when creating directory', async () => {
-  // Mock fs.mkdir to throw permission denied error
-  jest.spyOn(fs, 'mkdir').mockRejectedValue(Object.assign(
-    new Error('EACCES: permission denied'),
-    { code: 'EACCES' }
-  ));
+```typescript
+test('process_thoughts validates input types correctly', async () => {
+  const server = new PrivateJournalServer(tempDir);
+  const serverAny = server as any;
 
-  await expect(journalManager.writeEntry('test')).rejects.toThrow('Failed to create journal directory');
+  // Test non-string values for all fields
+  const invalidTypes = [123, true, {}, [], null];
 
-  // Restore original implementation
-  jest.restoreAllMocks();
-});
+  for (const invalidType of invalidTypes) {
+    const request = {
+      params: {
+        name: 'process_thoughts',
+        arguments: {
+          feelings: invalidType,
+          project_notes: 'Valid notes'
+        },
+      },
+    };
 
-test('handles permission denied errors when writing file', async () => {
-  // Mock directory creation to succeed but file writing to fail
-  jest.spyOn(fs, 'mkdir').mockResolvedValue(undefined);
-  jest.spyOn(fs, 'writeFile').mockRejectedValue(Object.assign(
-    new Error('EACCES: permission denied'),
-    { code: 'EACCES' }
-  ));
-
-  await expect(journalManager.writeEntry('test')).rejects.toThrow('permission denied');
-
-  // Restore original implementation
-  jest.restoreAllMocks();
-});
-```
-
-## Issue 2: Missing Tests for Edge Cases in Timestamp Generation
-**Description:** The timestamp generation logic uses randomness for uniqueness, but there are no tests for edge cases like collisions.
-
-**Recommendation:** Add tests for the timestamp generation uniqueness.
-
-```
-test('generates unique timestamps even for rapid sequential calls', async () => {
-  const timestamps = [];
-  for (let i = 0; i < 100; i++) {
-    const timestamp = journalManager['formatTimestamp'](new Date());
-    timestamps.push(timestamp);
+    await expect(async () => {
+      await serverAny.server.requestHandlers.get('tools/call')(request);
+    }).rejects.toThrow();
   }
+});
 
-  // Check all timestamps are unique
-  const uniqueTimestamps = new Set(timestamps);
-  expect(uniqueTimestamps.size).toBe(timestamps.length);
+test('process_thoughts handles empty/missing required fields', async () => {
+  const server = new PrivateJournalServer(tempDir);
+  const serverAny = server as any;
+
+  // Test with completely empty arguments
+  const request = {
+    params: {
+      name: 'process_thoughts',
+      arguments: {},
+    },
+  };
+
+  await expect(async () => {
+    await serverAny.server.requestHandlers.get('tools/call')(request);
+  }).rejects.toThrow('At least one thought category must be provided');
 });
 ```
 
-## Issue 3: Missing Tests for Error Handling in Remote-Only Mode
-**Description:** There are tests for basic remote-only mode functionality, but not for all error scenarios.
+# GitHub Issue: Missing tests for search_journal tool with special characters and Unicode
 
-**Recommendation:** Add more specific tests for error handling in remote-only mode.
+## Description
+The `search_journal` tool should handle special characters, Unicode, and potentially problematic search queries, but there are no specific tests for these cases.
 
-```
-test('handles network timeout errors in remote-only mode', async () => {
-  const remoteOnlyConfig = {
-    serverUrl: 'https://api.example.com',
-    teamId: 'test-team',
-    apiKey: 'test-key',
-    enabled: true,
-    remoteOnly: true
-  };
+## Recommendation
+Add tests to verify that search functionality works correctly with a variety of special characters and international text.
 
-  const remoteOnlyJournalManager = new JournalManager(projectTempDir, undefined, remoteOnlyConfig);
+```typescript
+test('search_journal handles special characters and Unicode in queries', async () => {
+  const server = new PrivateJournalServer(tempDir);
+  const searchSpy = jest.spyOn(SearchService.prototype, 'search').mockResolvedValue([]);
+  const serverAny = server as any;
 
-  // Mock fetch to simulate network timeout
-  mockFetch.mockImplementation(() => {
-    return new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Network timeout')), 50);
-    });
-  });
+  const specialQueries = [
+    'emoji search 🔍 test 🚀',
+    'unicode characters こんにちは 你好 مرحبا',
+    'HTML tags <script>alert("test")</script>',
+    'SQL injection; DROP TABLE users;',
+    'quotes "double" and \'single\'',
+    'path traversal ../../../etc/passwd',
+    'null character test\0hidden'
+  ];
 
-  await expect(remoteOnlyJournalManager.writeEntry('test')).rejects.toThrow(
-    'Remote journal posting failed: Network timeout'
-  );
-});
+  for (const query of specialQueries) {
+    const request = {
+      params: {
+        name: 'search_journal',
+        arguments: {
+          query: query,
+        },
+      },
+    };
 
-test('handles malformed JSON responses in remote-only mode', async () => {
-  const remoteOnlyConfig = {
-    serverUrl: 'https://api.example.com',
-    teamId: 'test-team',
-    apiKey: 'test-key',
-    enabled: true,
-    remoteOnly: true
-  };
-
-  const remoteOnlyJournalManager = new JournalManager(projectTempDir, undefined, remoteOnlyConfig);
-
-  // Mock fetch to return invalid JSON
-  const mockResponse = {
-    ok: true,
-    status: 200,
-    statusText: 'OK',
-    text: jest.fn().mockResolvedValue('Not valid JSON'),
-    json: jest.fn().mockRejectedValue(new SyntaxError('Unexpected token'))
-  };
-
-  mockFetch.mockResolvedValue(mockResponse as Response);
-
-  // This should still succeed as we don't parse the JSON response for posting
-  await expect(remoteOnlyJournalManager.writeEntry('test')).resolves.not.toThrow();
+    // Should not throw an error
+    await serverAny.server.requestHandlers.get('tools/call')(request);
+    expect(searchSpy).toHaveBeenCalledWith(query, expect.anything());
+    searchSpy.mockClear();
+  }
 });
 ```
 
-## Issue 4: Missing Tests for SearchService with Invalid Inputs
-**Description:** There are no tests for how SearchService handles invalid search parameters.
+# GitHub Issue: Missing tests for list_recent_entries tool parameters
 
-**Recommendation:** Add tests for invalid search parameters.
+## Description
+The `list_recent_entries` tool accepts parameters like `limit`, `type`, and `days`, but there aren't specific tests for parameter validation and edge cases.
 
-```
-test('handles invalid search parameters gracefully', async () => {
-  // Test with negative limit
-  const results1 = await searchService.search('test query', { limit: -5 });
-  expect(results1.length).toBeLessThanOrEqual(10); // Should use default or cap at reasonable value
+## Recommendation
+Add tests to verify proper handling of various parameter values, including invalid ones.
 
-  // Test with extremely high limit
-  const results2 = await searchService.search('test query', { limit: 1000000 });
-  expect(results2.length).toBeLessThanOrEqual(100); // Should have a reasonable upper limit
+```typescript
+test('list_recent_entries validates and handles parameters correctly', async () => {
+  const server = new PrivateJournalServer(tempDir);
+  const searchServiceSpy = jest.spyOn(SearchService.prototype, 'listRecent');
+  const serverAny = server as any;
 
-  // Test with invalid date range
-  const results3 = await searchService.search('test query', {
-    dateRange: {
-      start: new Date('invalid date'),
-      end: new Date()
+  // Test valid parameters
+  const validParameterSets = [
+    { limit: 5, type: 'project', days: 7 },
+    { limit: 20, type: 'user', days: 30 },
+    { limit: 0, type: 'both', days: 1 },
+    { limit: 100, type: 'both', days: 365 },
+    // Default parameters (empty object)
+    {}
+  ];
+
+  for (const params of validParameterSets) {
+    const request = {
+      params: {
+        name: 'list_recent_entries',
+        arguments: params,
+      },
+    };
+
+    await serverAny.server.requestHandlers.get('tools/call')(request);
+
+    // Verify appropriate parameters are passed to listRecent
+    if (Object.keys(params).length === 0) {
+      // Default values
+      expect(searchServiceSpy).toHaveBeenCalledWith({
+        limit: 10,
+        type: 'both',
+        dateRange: { start: expect.any(Date) }
+      });
+    } else {
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - (params.days || 30));
+
+      expect(searchServiceSpy).toHaveBeenCalledWith({
+        limit: params.limit ?? 10,
+        type: params.type ?? 'both',
+        dateRange: { start: expect.any(Date) }
+      });
     }
-  });
-  expect(Array.isArray(results3)).toBe(true); // Should still return array, not crash
-});
 
-test('handles extremely long search queries', async () => {
-  const longQuery = 'test query '.repeat(1000); // Very long query
-  const results = await searchService.search(longQuery);
-  expect(Array.isArray(results)).toBe(true);
-});
-```
-
-## Issue 5: Missing Tests for Embedding Service Failures
-**Description:** There are no tests for what happens when the embedding model fails to load or generate embeddings.
-
-**Recommendation:** Add tests that simulate embedding service failures.
-
-```
-test('handles embedding service initialization failure', async () => {
-  // Mock the pipeline to fail
-  jest.spyOn(require('@xenova/transformers'), 'pipeline').mockRejectedValue(
-    new Error('Failed to load model')
-  );
-
-  const embeddingService = EmbeddingService.getInstance();
-  await expect(embeddingService.initialize()).rejects.toThrow('Failed to load model');
-
-  // Should still be able to create journal entries even if embedding fails
-  await journalManager.writeEntry('Test entry without embeddings');
-
-  // Verify entry was created despite embedding failure
-  const today = new Date();
-  const dateString = getFormattedDate(today);
-  const dayDir = path.join(projectTempDir, dateString);
-  const files = await fs.readdir(dayDir);
-  expect(files.some(f => f.endsWith('.md'))).toBe(true);
-});
-
-test('continues journal operation when embedding generation fails', async () => {
-  // Mock the embedding generation to fail
-  const mockEmbeddingService = EmbeddingService.getInstance();
-  jest.spyOn(mockEmbeddingService, 'generateEmbedding').mockRejectedValue(
-    new Error('Embedding generation failed')
-  );
-
-  // Should not throw when writing an entry
-  await expect(journalManager.writeEntry('Test entry')).resolves.not.toThrow();
-
-  // Verify entry was created despite embedding failure
-  const today = new Date();
-  const dateString = getFormattedDate(today);
-  const dayDir = path.join(projectTempDir, dateString);
-  const files = await fs.readdir(dayDir);
-  expect(files.some(f => f.endsWith('.md'))).toBe(true);
-});
-```
-
-## Issue 6: Missing Tests for Security Validation in Server
-**Description:** The server has path validation logic, but there are no comprehensive tests for path security checks.
-
-**Recommendation:** Add tests specifically for the security validation methods.
-
-```
-test('isPathSafe correctly validates secure paths', () => {
-  const server = new PrivateJournalServer('/valid/path');
-
-  // Valid paths
-  expect(server['isPathSafe']('/valid/path/entry.md')).toBe(true);
-  expect(server['isPathSafe']('/another/valid/path.md')).toBe(true);
-
-  // Invalid paths with traversal attempts
-  expect(server['isPathSafe']('/valid/path/../../../etc/passwd')).toBe(false);
-  expect(server['isPathSafe']('../relative/path.md')).toBe(false);
-  expect(server['isPathSafe']('non/absolute/path.md')).toBe(false);
-  expect(server['isPathSafe']('/valid/path/../../')).toBe(false);
-});
-
-test('isValidJournalUri validates URI format', () => {
-  const server = new PrivateJournalServer('/valid/path');
-
-  // Valid URIs
-  expect(server['isValidJournalUri']('journal://project/encodedPath123')).toBe(true);
-  expect(server['isValidJournalUri']('journal://user/anotherEncodedPath456')).toBe(true);
-
-  // Invalid URIs
-  expect(server['isValidJournalUri']('http://malicious.com')).toBe(false);
-  expect(server['isValidJournalUri']('journal://admin/path')).toBe(false); // Invalid type
-  expect(server['isValidJournalUri']('journal://project/../traversal')).toBe(false);
-  expect(server['isValidJournalUri']('journal://project/<script>alert(1)</script>')).toBe(false);
-});
-```
-
-## Issue 7: Missing Tests for Concurrent Journal Operations
-**Description:** There are no tests for concurrent journal operations which could lead to race conditions.
-
-**Recommendation:** Add tests for concurrent operations.
-
-```
-test('handles concurrent journal write operations correctly', async () => {
-  const operations = [];
-  const numberOfOperations = 10;
-
-  // Create multiple concurrent write operations
-  for (let i = 0; i < numberOfOperations; i++) {
-    operations.push(journalManager.writeEntry(`Concurrent entry ${i}`));
+    searchServiceSpy.mockClear();
   }
 
-  // Wait for all operations to complete
-  await Promise.all(operations);
+  // Test invalid parameters
+  const invalidParameterSets = [
+    { limit: -10, type: 'project', days: 30 },
+    { limit: 'not-a-number', type: 'both', days: 30 },
+    { limit: 10, type: 'invalid-type', days: 30 },
+    { limit: 10, type: 'both', days: 'not-a-number' }
+  ];
 
-  // Verify all entries were created
-  const today = new Date();
-  const dateString = getFormattedDate(today);
-  const dayDir = path.join(projectTempDir, dateString);
-  const files = await fs.readdir(dayDir);
-
-  // Should have at least numberOfOperations .md files
-  const mdFiles = files.filter(f => f.endsWith('.md'));
-  expect(mdFiles.length).toBeGreaterThanOrEqual(numberOfOperations);
-
-  // Verify entries have unique timestamps
-  const uniqueTimestamps = new Set(mdFiles.map(f => f.split('.')[0]));
-  expect(uniqueTimestamps.size).toBe(mdFiles.length);
-});
-```
-
-## Issue 8: Missing Tests for Resource and Prompt Functionality
-**Description:** The server implements MCP resources and prompts, but these aren't tested.
-
-**Recommendation:** Add tests for resources and prompts.
-
-```
-test('getJournalResources returns valid resources', async () => {
-  // Write some test entries first
-  await journalManager.writeEntry('Test entry 1');
-  await journalManager.writeEntry('Test entry 2');
-
-  const server = new PrivateJournalServer(projectTempDir);
-  const resources = await server['getJournalResources']();
-
-  expect(resources.length).toBeGreaterThan(0);
-  expect(resources[0]).toHaveProperty('uri');
-  expect(resources[0]).toHaveProperty('name');
-  expect(resources[0]).toHaveProperty('description');
-  expect(resources[0]).toHaveProperty('mimeType', 'text/markdown');
-  expect(resources[0].uri).toMatch(/^journal:\/\/(project|user)\//);
-});
-
-test('generatePrompt creates valid prompts', () => {
-  const server = new PrivateJournalServer(projectTempDir);
-
-  // Test daily reflection prompt
-  const dailyPrompt = server['generatePrompt']('daily_reflection', { focus_area: 'work' });
-  expect(dailyPrompt.content).toContain('focus on work');
-  expect(dailyPrompt.content).toContain('Feelings');
-
-  // Test project retrospective prompt
-  const projectPrompt = server['generatePrompt']('project_retrospective', { project_name: 'Test Project' });
-  expect(projectPrompt.content).toContain('for Test Project');
-
-  // Test emotional processing prompt
-  const emotionalPrompt = server['generatePrompt']('emotional_processing', {});
-  expect(emotionalPrompt.content).toContain('emotional processing');
-
-  // Test with invalid prompt name
-  expect(() => server['generatePrompt']('invalid_prompt', {})).toThrow('Unknown prompt');
-});
-
-test('readJournalResource retrieves correct content', async () => {
-  // Write a test entry
-  await journalManager.writeEntry('Test resource content');
-
-  // Get the path to the created file
-  const today = new Date();
-  const dateString = getFormattedDate(today);
-  const dayDir = path.join(projectTempDir, dateString);
-  const files = await fs.readdir(dayDir);
-  const mdFile = files.find(f => f.endsWith('.md'));
-  const filePath = path.join(dayDir, mdFile);
-
-  const server = new PrivateJournalServer(projectTempDir);
-
-  // Create a valid URI
-  const encodedPath = Buffer.from(filePath).toString('base64url');
-  const uri = `journal://project/${encodedPath}`;
-
-  // Read the resource
-  const content = await server['readJournalResource'](uri);
-  expect(content).toContain('Test resource content');
-
-  // Test with invalid URI
-  await expect(server['readJournalResource']('journal://invalid/path')).rejects.toThrow();
-});
-```
-
-## Issue 9: Missing Tests for Environment Variable Configuration
-**Description:** There are tests for some environment variables, but not comprehensive coverage.
-
-**Recommendation:** Add more comprehensive tests for environment variable configuration.
-
-```
-test('createRemoteConfig handles all environment variable configurations', () => {
-  // Test with all variables set
-  process.env.REMOTE_JOURNAL_SERVER_URL = 'https://api.example.com';
-  process.env.REMOTE_JOURNAL_TEAMID = 'team1';
-  process.env.REMOTE_JOURNAL_APIKEY = 'key1';
-  process.env.REMOTE_JOURNAL_ONLY = 'true';
-
-  let config = createRemoteConfig();
-  expect(config).toEqual({
-    serverUrl: 'https://api.example.com',
-    teamId: 'team1',
-    apiKey: 'key1',
-    enabled: true,
-    remoteOnly: true
-  });
-
-  // Test with REMOTE_JOURNAL_ONLY=false
-  process.env.REMOTE_JOURNAL_ONLY = 'false';
-  config = createRemoteConfig();
-  expect(config.remoteOnly).toBe(false);
-
-  // Test with REMOTE_JOURNAL_ONLY as invalid value (should default to false)
-  process.env.REMOTE_JOURNAL_ONLY = 'invalid';
-  config = createRemoteConfig();
-  expect(config.remoteOnly).toBe(false);
-
-  // Test with missing SERVER_URL
-  delete process.env.REMOTE_JOURNAL_SERVER_URL;
-  config = createRemoteConfig();
-  expect(config).toBeUndefined();
-
-  // Test with empty values
-  process.env.REMOTE_JOURNAL_SERVER_URL = '';
-  process.env.REMOTE_JOURNAL_TEAMID = 'team1';
-  process.env.REMOTE_JOURNAL_APIKEY = 'key1';
-  config = createRemoteConfig();
-  expect(config).toBeUndefined();
-
-  // Reset env vars
-  delete process.env.REMOTE_JOURNAL_SERVER_URL;
-  delete process.env.REMOTE_JOURNAL_TEAMID;
-  delete process.env.REMOTE_JOURNAL_APIKEY;
-  delete process.env.REMOTE_JOURNAL_ONLY;
-});
-```
-
-## Issue 10: Missing Tests for Debug Logging
-**Description:** The code has debug logging functionality controlled by environment variables, but it's not tested.
-
-**Recommendation:** Add tests for debug logging behavior.
-
-```
-test('debug logging is triggered by JOURNAL_DEBUG environment variable', async () => {
-  // Save original console.error
-  const originalConsoleError = console.error;
-  const mockConsoleError = jest.fn();
-  console.error = mockConsoleError;
-
-  try {
-    // Enable debug logging
-    process.env.JOURNAL_DEBUG = 'true';
-
-    const remoteConfig = {
-      serverUrl: 'https://api.example.com',
-      teamId: 'test-team',
-      apiKey: 'test-key',
-      enabled: true
+  for (const params of invalidParameterSets) {
+    const request = {
+      params: {
+        name: 'list_recent_entries',
+        arguments: params,
+      },
     };
 
-    // Mock fetch to return success
-    const mockResponse = {
-      ok: true,
-      status: 200,
-      statusText: 'OK',
-      text: jest.fn().mockResolvedValue('Success'),
-      json: jest.fn().mockResolvedValue({})
-    };
-    mockFetch.mockResolvedValue(mockResponse as Response);
-
-    // Perform operation that should trigger debug logs
-    await postToRemoteServer(remoteConfig, {
-      team_id: 'test-team',
-      timestamp: Date.now(),
-      content: 'Debug test'
-    });
-
-    // Verify debug logs were called
-    expect(mockConsoleError).toHaveBeenCalledWith('=== REMOTE POST DEBUG ===');
-    expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('URL:'));
-    expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('Headers:'));
-    expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('Payload size:'));
-
-    // Repeat with debug disabled
-    mockConsoleError.mockClear();
-    process.env.JOURNAL_DEBUG = 'false';
-
-    await postToRemoteServer(remoteConfig, {
-      team_id: 'test-team',
-      timestamp: Date.now(),
-      content: 'Non-debug test'
-    });
-
-    // Verify debug logs were not called
-    expect(mockConsoleError).not.toHaveBeenCalledWith('=== REMOTE POST DEBUG ===');
-
-  } finally {
-    // Restore original console.error and environment
-    console.error = originalConsoleError;
-    delete process.env.JOURNAL_DEBUG;
+    // Should still work by using default/fallback values
+    await serverAny.server.requestHandlers.get('tools/call')(request);
+    searchServiceSpy.mockClear();
   }
 });
 ```
 
-These test cases would significantly improve the robustness of the codebase by covering edge cases, error conditions, and configurations that are currently untested. Each test focuses on a specific aspect of the application that could benefit from more thorough validation.
+# GitHub Issue: Missing tests for process_feelings tool (backward compatibility)
+
+## Description
+The codebase contains a `process_feelings` tool handler which appears to be for backward compatibility, but there are no specific tests for this functionality.
+
+## Recommendation
+Add tests to ensure the backward compatibility handler works correctly.
+
+```typescript
+test('process_feelings tool works for backward compatibility', async () => {
+  const server = new PrivateJournalServer(tempDir);
+  const journalManagerSpy = jest.spyOn(JournalManager.prototype, 'writeEntry');
+  const serverAny = server as any;
+
+  const request = {
+    params: {
+      name: 'process_feelings',
+      arguments: {
+        diary_entry: 'This is a backward compatibility test'
+      },
+    },
+  };
+
+  const response = await serverAny.server.requestHandlers.get('tools/call')(request);
+
+  expect(journalManagerSpy).toHaveBeenCalledWith('This is a backward compatibility test');
+  expect(response.content[0].text).toBe('Journal entry recorded successfully.');
+
+  // Test with missing required parameter
+  const invalidRequest = {
+    params: {
+      name: 'process_feelings',
+      arguments: {},
+    },
+  };
+
+  await expect(async () => {
+    await serverAny.server.requestHandlers.get('tools/call')(invalidRequest);
+  }).rejects.toThrow('diary_entry is required and must be a string');
+});
+```
+
+# GitHub Issue: Missing tests for exception handling in MCP server
+
+## Description
+There are no specific tests for how the MCP server handles unexpected exceptions during tool execution, which is important for ensuring graceful error handling.
+
+## Recommendation
+Add tests for unexpected exception handling to verify that errors are properly propagated and formatted.
+
+```typescript
+test('server handles unexpected exceptions gracefully', async () => {
+  const server = new PrivateJournalServer(tempDir);
+  const serverAny = server as any;
+
+  // Mock journalManager to throw an unexpected error
+  jest.spyOn(JournalManager.prototype, 'writeEntry').mockImplementationOnce(() => {
+    throw new Error('Unexpected error');
+  });
+
+  const request = {
+    params: {
+      name: 'process_feelings',
+      arguments: {
+        diary_entry: 'Test entry'
+      },
+    },
+  };
+
+  await expect(async () => {
+    await serverAny.server.requestHandlers.get('tools/call')(request);
+  }).rejects.toThrow('Failed to write journal entry: Unexpected error');
+
+  // Test with a non-Error object
+  jest.spyOn(JournalManager.prototype, 'writeEntry').mockImplementationOnce(() => {
+    throw 'String error'; // Not an Error object
+  });
+
+  await expect(async () => {
+    await serverAny.server.requestHandlers.get('tools/call')(request);
+  }).rejects.toThrow('Failed to write journal entry: Unknown error occurred');
+});
+```
+
+# GitHub Issue: Missing tests for invalid tool names
+
+## Description
+There are no tests for how the server handles requests for non-existent tool names.
+
+## Recommendation
+Add tests to ensure the server properly rejects requests for unknown tools.
+
+```typescript
+test('server rejects unknown tool names', async () => {
+  const server = new PrivateJournalServer(tempDir);
+  const serverAny = server as any;
+
+  const request = {
+    params: {
+      name: 'non_existent_tool',
+      arguments: {},
+    },
+  };
+
+  await expect(async () => {
+    await serverAny.server.requestHandlers.get('tools/call')(request);
+  }).rejects.toThrow('Unknown tool: non_existent_tool');
+});
+```
+
+# GitHub Issue: Missing tests for generateMissingEmbeddings error handling
+
+## Description
+The `generateMissingEmbeddings` method is called during server startup but there are no specific tests for error handling during this process.
+
+## Recommendation
+Add tests to verify proper error handling when embedding generation fails during startup.
+
+```typescript
+test('generateMissingEmbeddings handles errors gracefully', async () => {
+  // Create some test entries without embeddings
+  const testDir = path.join(tempDir, '2024-01-01');
+  await fs.mkdir(testDir, { recursive: true });
+  await fs.writeFile(path.join(testDir, '12-00-00-000000.md'), 'Test content');
+
+  // Mock console.error to verify logging
+  const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+  // Mock embeddingService to throw an error
+  jest.spyOn(EmbeddingService.prototype, 'generateEmbedding')
+    .mockRejectedValue(new Error('Failed to generate embedding'));
+
+  const journalManager = new JournalManager(tempDir);
+
+  // Should not throw, but should log error
+  const count = await journalManager.generateMissingEmbeddings();
+
+  // Should return 0 for count since generation failed
+  expect(count).toBe(0);
+
+  // Should have logged errors
+  expect(consoleErrorSpy).toHaveBeenCalledWith(
+    expect.stringContaining('Failed to generate embedding'),
+    expect.anything()
+  );
+
+  consoleErrorSpy.mockRestore();
+});
+```
+
+# GitHub Issue: Missing tests for invalid file paths in readJournalResource
+
+## Description
+The `readJournalResource` method validates URIs but there are no specific tests for different types of invalid paths.
+
+## Recommendation
+Add tests to ensure proper validation and error handling for various invalid URI patterns.
+
+```typescript
+test('readJournalResource rejects various invalid URI patterns', async () => {
+  const server = new PrivateJournalServer(tempDir);
+  const serverAny = server as any;
+
+  const invalidUris = [
+    'file:///etc/passwd',
+    'http://malicious.example.com',
+    'https://evil.example.com',
+    'journal://admin/../../etc/passwd',
+    'journal://system/etc/passwd',
+    'journal://project/' + Buffer.from('/etc/passwd').toString('base64url'),
+    'journal://user/' + Buffer.from('C:\\Windows\\System32\\config.sys').toString('base64url'),
+    'journal://project/../../etc/passwd',
+    'journal://project/%2e%2e%2f%2e%2e%2fetc%2fpasswd', // URL encoded path traversal
+    'journal://project/\u002e\u002e/\u002e\u002e/etc/passwd', // Unicode path traversal
+    // Invalid protocol
+    'journalx://project/abc123',
+    // Missing path segment
+    'journal://project/'
+  ];
+
+  for (const uri of invalidUris) {
+    await expect(serverAny.readJournalResource(uri)).rejects.toThrow();
+  }
+});
+```
+
+# GitHub Issue: Missing tests for embedding service with different models
+
+## Description
+The embedding service supports configurable models via environment variables or parameters, but there are no specific tests for using different models.
+
+## Recommendation
+Add tests to verify the service correctly uses different embedding models when specified.
+
+```typescript
+test('embedding service uses specified model correctly', async () => {
+  // Clear any prior singleton instance
+  EmbeddingService.resetInstance();
+
+  // Mock the pipeline import
+  const pipelineMock = jest.fn().mockResolvedValue({
+    mockEmbeddingModel: true,
+    __call__: jest.fn().mockResolvedValue({
+      data: new Float32Array([0.1, 0.2, 0.3])
+    })
+  });
+
+  jest.spyOn(require('@xenova/transformers'), 'pipeline').mockImplementation(pipelineMock);
+
+  // Test with explicit model in constructor
+  const customModel = 'Xenova/custom-model-name';
+  const service = EmbeddingService.getInstance(customModel);
+
+  // Initialize the model
+  await service.initialize();
+
+  // Verify the pipeline was called with the correct model name
+  expect(pipelineMock).toHaveBeenCalledWith('feature-extraction', customModel);
+
+  // Clear for next test
+  EmbeddingService.resetInstance();
+  pipelineMock.mockClear();
+
+  // Test with environment variable
+  process.env.JOURNAL_EMBEDDING_MODEL = 'Xenova/env-model-name';
+  const envService = EmbeddingService.getInstance();
+  await envService.initialize();
+
+  expect(pipelineMock).toHaveBeenCalledWith('feature-extraction', 'Xenova/env-model-name');
+
+  // Cleanup
+  delete process.env.JOURNAL_EMBEDDING_MODEL;
+  EmbeddingService.resetInstance();
+});
+```
+
+# GitHub Issue: Missing tests for MCP server initialization and startup sequence
+
+## Description
+There are no specific tests for the server initialization and startup sequence, including error handling during these phases.
+
+## Recommendation
+Add tests to verify proper server initialization and error handling during startup.
+
+```typescript
+test('server initialization and startup sequence works correctly', async () => {
+  // Mock dependencies to verify initialization sequence
+  const mockTransport = { connect: jest.fn() };
+  jest.spyOn(require('@modelcontextprotocol/sdk/server/stdio.js'), 'StdioServerTransport')
+    .mockImplementation(() => mockTransport);
+
+  const mockServer = {
+    connect: jest.fn(),
+    setRequestHandler: jest.fn()
+  };
+  jest.spyOn(require('@modelcontextprotocol/sdk/server/index.js'), 'Server')
+    .mockImplementation(() => mockServer);
+
+  // Mock generateMissingEmbeddings
+  const generateMissingEmbeddingsMock = jest.fn().mockResolvedValue(5);
+  jest.spyOn(JournalManager.prototype, 'generateMissingEmbeddings')
+    .mockImplementation(generateMissingEmbeddingsMock);
+
+  // Mock console.error to check logging
+  const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+  // Create server and run it
+  const server = new PrivateJournalServer(tempDir);
+  await server.run();
+
+  // Verify initialization sequence
+  expect(generateMissingEmbeddingsMock).toHaveBeenCalled();
+  expect(mockServer.connect).toHaveBeenCalledWith(mockTransport);
+  expect(consoleErrorSpy).toHaveBeenCalledWith('Generated embeddings for 5 existing journal entries.');
+
+  // Test error handling during embedding generation
+  generateMissingEmbeddingsMock.mockRejectedValueOnce(new Error('Embedding generation failed'));
+  consoleErrorSpy.mockClear();
+
+  const server2 = new PrivateJournalServer(tempDir);
+  await server2.run();
+
+  // Should still connect to transport even if embedding generation fails
+  expect(mockServer.connect).toHaveBeenCalledWith(mockTransport);
+  expect(consoleErrorSpy).toHaveBeenCalledWith(
+    'Failed to generate missing embeddings on startup:',
+    expect.anything()
+  );
+
+  // Cleanup
+  consoleErrorSpy.mockRestore();
+});
+```
+
+# GitHub Issue: Missing tests for directory traversal defenses in isPathSafe
+
+## Description
+The `isPathSafe` method is critical for security, but there are no comprehensive tests for different path traversal attack patterns.
+
+## Recommendation
+Add thorough tests for path validation and traversal attack prevention.
+
+```typescript
+test('isPathSafe comprehensively defends against path traversal', async () => {
+  const server = new PrivateJournalServer(tempDir);
+  const serverAny = server as any;
+
+  // Test basic traversal patterns
+  const traversalPatterns = [
+    '/tmp/../etc/passwd',
+    '/tmp/../../etc/passwd',
+    '/tmp/subdir/../../../etc/passwd',
+    './relative/path',
+    '../relative/path',
+    '../../etc/passwd',
+    'relative/path',
+    '/tmp/./././../etc/passwd',
+    // Windows-style paths
+    'C:\\Windows\\System32\\config.sys',
+    'C:\\Windows\\..\\Windows\\System32\\config.sys',
+    '\\\\server\\share',
+    // URL-encoded traversal
+    '/tmp/%2e%2e/%2e%2e/etc/passwd',
+    '/tmp%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd',
+    // Unicode encoded traversal
+    '/tmp/\u002e\u002e/\u002e\u002e/etc/passwd',
+    // Null byte injection
+    '/tmp/subdir\0/../../etc/passwd',
+    // Double slash confusion
+    '/tmp///../etc/passwd',
+    // Exotic path manipulations
+    '/tmp/.../.../etc/passwd',
+    '/tmp/xxx/../etc/passwd',
+    // System directories
+    '/etc/passwd',
+    '/bin/bash',
+    '/usr/bin/python',
+    '/dev/null',
+    '/proc/self/environ',
+    '/sys/kernel/debug',
+    '/root/.ssh/id_rsa',
+    '/var/log/auth.log'
+  ];
+
+  for (const pattern of traversalPatterns) {
+    expect(serverAny.isPathSafe(pattern)).toBe(false);
+  }
+
+  // Test safe paths
+  const safePaths = [
+    '/home/user/journal/entry.md',
+    '/tmp/journal/entry.md',
+    '/var/data/journal/entry.md',
+    '/opt/journal/entry.md'
+  ];
+
+  for (const safePath of safePaths) {
+    expect(serverAny.isPathSafe(safePath)).toBe(true);
+  }
+});
+```
+
+These tests would significantly improve the test coverage and ensure that the code handles edge cases, security concerns, and error conditions properly.
