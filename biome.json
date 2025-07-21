@@ -1,6 +1,6 @@
 {
   "files": {
-    "includes": ["src/**/*", "tests/**/*"]
+    "includes": ["src/**/*", "tests/**/*", "*.json"]
   },
   "linter": {
     "enabled": true,
