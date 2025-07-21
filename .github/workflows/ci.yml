@@ -29,6 +29,9 @@ jobs:
     - name: Run oxlint
       run: npm run lint
 
+    - name: Fix Biome binary permissions
+      run: chmod +x node_modules/@biomejs/cli-linux-x64/biome || true
+
     - name: Check Biome formatting
       run: npx biome format --check
 
@@ -58,6 +61,9 @@ jobs:
 
     - name: Run oxlint
       run: npm run lint
+
+    - name: Fix Biome binary permissions
+      run: chmod +x node_modules/@biomejs/cli-linux-x64/biome || true
 
     - name: Check Biome formatting
       run: npx biome format --check
