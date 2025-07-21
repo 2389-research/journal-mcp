@@ -66,26 +66,7 @@ export async function postToRemoteServer(
     return;
   }
 
-  const debug = process.env.JOURNAL_DEBUG === 'true';
   const url = `${config.serverUrl}/teams/${config.teamId}/journal/entries`;
-
-  if (debug) {
-    console.error('=== REMOTE POST DEBUG ===');
-    console.error('URL:', url);
-    console.error('Headers:', {
-      'Content-Type': 'application/json',
-      'X-API-Key': `${config.apiKey.substring(0, 8)}...`,
-    });
-    console.error('Payload size:', JSON.stringify(payload).length, 'bytes');
-    console.error('Payload structure:', {
-      team_id: payload.team_id,
-      timestamp: payload.timestamp,
-      has_content: !!payload.content,
-      has_sections: !!payload.sections,
-      sections_count: payload.sections ? Object.keys(payload.sections).length : 0,
-      embedding_length: payload.embedding?.length || 0,
-    });
-  }
 
   try {
     const response = await fetch(url, {
@@ -97,40 +78,13 @@ export async function postToRemoteServer(
       body: JSON.stringify(payload),
     });
 
-    if (debug) {
-      console.error('Response status:', response.status, response.statusText);
-      console.error('Response headers:', Object.fromEntries(response.headers.entries()));
-    }
-
     if (!response.ok) {
       const errorText = await response.text();
-      if (debug) {
-        console.error('Error response body:', errorText);
-      }
       throw new Error(
         `Remote server error: ${response.status} ${response.statusText} - ${errorText}`
       );
     }
-
-    const responseText = await response.text();
-    if (debug) {
-      console.error('Success response body:', responseText);
-      console.error('=== END REMOTE POST DEBUG ===');
-    }
-
-    console.error('Remote journal post successful');
   } catch (error) {
-    if (debug) {
-      console.error('=== REMOTE POST ERROR ===');
-      console.error('Error details:', error);
-      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-      console.error('=== END REMOTE POST ERROR ===');
-    }
-    // Log error but don't rethrow - we want local journaling to continue
-    console.error(
-      'Remote journal post failed:',
-      error instanceof Error ? error.message : String(error)
-    );
     throw error; // Re-throw for caller to handle gracefully
   }
 }
@@ -143,14 +97,7 @@ export async function searchRemoteServer(
     throw new Error('Remote server not configured');
   }
 
-  const debug = process.env.JOURNAL_DEBUG === 'true';
   const url = `${config.serverUrl}/teams/${config.teamId}/journal/search`;
-
-  if (debug) {
-    console.error('=== REMOTE SEARCH DEBUG ===');
-    console.error('URL:', url);
-    console.error('Search request:', JSON.stringify(searchRequest, null, 2));
-  }
 
   try {
     const response = await fetch(url, {
@@ -162,34 +109,16 @@ export async function searchRemoteServer(
       body: JSON.stringify(searchRequest),
     });
 
-    if (debug) {
-      console.error('Search response status:', response.status, response.statusText);
-    }
-
     if (!response.ok) {
       const errorText = await response.text();
-      if (debug) {
-        console.error('Search error response:', errorText);
-        console.error('=== END REMOTE SEARCH DEBUG ===');
-      }
       throw new Error(
         `Remote search error: ${response.status} ${response.statusText} - ${errorText}`
       );
     }
 
     const data = (await response.json()) as RemoteSearchResponse;
-    if (debug) {
-      console.error('Search response data:', JSON.stringify(data, null, 2));
-      console.error('=== END REMOTE SEARCH DEBUG ===');
-    }
     return data;
   } catch (error) {
-    if (debug) {
-      console.error('=== REMOTE SEARCH ERROR ===');
-      console.error('Error details:', error);
-      console.error('=== END REMOTE SEARCH ERROR ===');
-    }
-    console.error('Remote search failed:', error instanceof Error ? error.message : String(error));
     throw error;
   }
 }
@@ -203,18 +132,11 @@ export async function getRemoteEntries(
     throw new Error('Remote server not configured');
   }
 
-  const debug = process.env.JOURNAL_DEBUG === 'true';
   const params = new URLSearchParams();
   if (limit) params.append('limit', limit.toString());
   if (offset !== undefined) params.append('offset', offset.toString());
 
   const url = `${config.serverUrl}/teams/${config.teamId}/journal/entries?${params}`;
-
-  if (debug) {
-    console.error('=== REMOTE ENTRIES DEBUG ===');
-    console.error('URL:', url);
-    console.error('Params:', { limit, offset });
-  }
 
   try {
     const response = await fetch(url, {
@@ -224,41 +146,19 @@ export async function getRemoteEntries(
       },
     });
 
-    if (debug) {
-      console.error('Entries response status:', response.status, response.statusText);
-    }
-
     if (!response.ok) {
       const errorText = await response.text();
-      if (debug) {
-        console.error('Entries error response:', errorText);
-        console.error('=== END REMOTE ENTRIES DEBUG ===');
-      }
       throw new Error(
         `Remote entries error: ${response.status} ${response.statusText} - ${errorText}`
       );
     }
 
     const data = (await response.json()) as { entries?: unknown[]; total_count?: number };
-    if (debug) {
-      console.error('Entries response data:', JSON.stringify(data, null, 2));
-      console.error('=== END REMOTE ENTRIES DEBUG ===');
-    }
-
     return {
       entries: (data.entries || []) as RemoteSearchResult[],
       total_count: data.total_count || 0,
     };
   } catch (error) {
-    if (debug) {
-      console.error('=== REMOTE ENTRIES ERROR ===');
-      console.error('Error details:', error);
-      console.error('=== END REMOTE ENTRIES ERROR ===');
-    }
-    console.error(
-      'Remote entries fetch failed:',
-      error instanceof Error ? error.message : String(error)
-    );
     throw error;
   }
 }
@@ -271,14 +171,7 @@ export async function getRemoteEntryById(
     throw new Error('Remote server not configured');
   }
 
-  const debug = process.env.JOURNAL_DEBUG === 'true';
   const url = `${config.serverUrl}/teams/${config.teamId}/journal/entries/${entryId}`;
-
-  if (debug) {
-    console.error('=== REMOTE ENTRY BY ID DEBUG ===');
-    console.error('URL:', url);
-    console.error('Entry ID:', entryId);
-  }
 
   try {
     const response = await fetch(url, {
@@ -288,46 +181,20 @@ export async function getRemoteEntryById(
       },
     });
 
-    if (debug) {
-      console.error('Entry response status:', response.status, response.statusText);
-    }
-
     if (response.status === 404) {
-      if (debug) {
-        console.error('Entry not found on remote server');
-        console.error('=== END REMOTE ENTRY BY ID DEBUG ===');
-      }
       return null;
     }
 
     if (!response.ok) {
       const errorText = await response.text();
-      if (debug) {
-        console.error('Entry error response:', errorText);
-        console.error('=== END REMOTE ENTRY BY ID DEBUG ===');
-      }
       throw new Error(
         `Remote entry fetch error: ${response.status} ${response.statusText} - ${errorText}`
       );
     }
 
     const data = (await response.json()) as RemoteSearchResult;
-    if (debug) {
-      console.error('Entry response data:', JSON.stringify(data, null, 2));
-      console.error('=== END REMOTE ENTRY BY ID DEBUG ===');
-    }
-
     return data;
   } catch (error) {
-    if (debug) {
-      console.error('=== REMOTE ENTRY BY ID ERROR ===');
-      console.error('Error details:', error);
-      console.error('=== END REMOTE ENTRY BY ID ERROR ===');
-    }
-    console.error(
-      'Remote entry fetch failed:',
-      error instanceof Error ? error.message : String(error)
-    );
     throw error;
   }
 }

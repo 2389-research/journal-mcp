@@ -566,14 +566,8 @@ describe('Remote Journal Posting', () => {
 
       await postToRemoteServer(mockConfig, payload);
 
-      // Verify debug logs were called
-      expect(mockConsoleError).toHaveBeenCalledWith('=== REMOTE POST DEBUG ===');
-      expect(mockConsoleError).toHaveBeenCalledWith(
-        'URL:',
-        'https://api.example.com/teams/test-team/journal/entries'
-      );
-      expect(mockConsoleError).toHaveBeenCalledWith('Headers:', expect.any(Object));
-      expect(mockConsoleError).toHaveBeenCalledWith('Payload size:', expect.any(Number), 'bytes');
+      // Debug logging has been removed
+      expect(mockConsoleError).not.toHaveBeenCalled();
 
       // Repeat with debug disabled
       mockConsoleError.mockClear();

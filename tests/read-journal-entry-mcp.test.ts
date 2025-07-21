@@ -248,7 +248,9 @@ Some technical notes about the project.
 
       await expect(async () => {
         await serverAny.server.requestHandlers.get('tools/call')(request);
-      }).rejects.toThrow('Failed to read entry: Remote server connection failed');
+      }).rejects.toThrow(
+        'Failed to read entry: Failed to fetch remote entry: Remote server connection failed'
+      );
     });
 
     it('should handle entries with content field instead of sections', async () => {
