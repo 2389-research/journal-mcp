@@ -172,10 +172,7 @@ describe('getRemoteEntryById', () => {
         'Connection refused'
       );
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Remote entry fetch failed:',
-        'Connection refused'
-      );
+      // Error logging removed, just verify the error is thrown correctly
     });
 
     it('should throw error for timeout', async () => {
@@ -231,17 +228,17 @@ describe('getRemoteEntryById', () => {
       };
       mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
-      await getRemoteEntryById(remoteConfig, 'entry-123');
+      const result = await getRemoteEntryById(remoteConfig, 'entry-123');
 
-      // Just verify some basic debug messages are logged
-      expect(consoleErrorSpy).toHaveBeenCalledWith('=== REMOTE ENTRY BY ID DEBUG ===');
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Entry ID:', 'entry-123');
-      expect(consoleErrorSpy).toHaveBeenCalledWith('=== END REMOTE ENTRY BY ID DEBUG ===');
-      // Verify the debug section was called at least 6 times (start + url + id + status + data + end)
-      expect(consoleErrorSpy).toHaveBeenCalledTimes(6);
+      // Debug logging has been removed, just verify functionality
+      expect(result).toEqual({
+        id: 'entry-123',
+        content: 'test content',
+      });
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
 
-    it('should log debug information for 404 responses', async () => {
+    it('should handle 404 responses gracefully', async () => {
       const mockResponse = {
         ok: false,
         status: 404,
@@ -249,13 +246,13 @@ describe('getRemoteEntryById', () => {
       };
       mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
-      await getRemoteEntryById(remoteConfig, 'missing-entry');
+      const result = await getRemoteEntryById(remoteConfig, 'missing-entry');
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Entry not found on remote server');
-      expect(consoleErrorSpy).toHaveBeenCalledWith('=== END REMOTE ENTRY BY ID DEBUG ===');
+      expect(result).toBeNull();
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
 
-    it('should log debug information for server errors', async () => {
+    it('should handle server errors properly', async () => {
       const mockResponse = {
         ok: false,
         status: 500,
@@ -264,10 +261,11 @@ describe('getRemoteEntryById', () => {
       };
       mockFetch.mockResolvedValue(mockResponse as unknown as Response);
 
-      await expect(getRemoteEntryById(remoteConfig, 'entry-123')).rejects.toThrow();
+      await expect(getRemoteEntryById(remoteConfig, 'entry-123')).rejects.toThrow(
+        'Remote entry fetch error: 500 Internal Server Error - Server error details'
+      );
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Entry error response:', 'Server error details');
-      expect(consoleErrorSpy).toHaveBeenCalledWith('=== END REMOTE ENTRY BY ID DEBUG ===');
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
   });
 });

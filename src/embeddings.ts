@@ -40,12 +40,11 @@ export class EmbeddingService {
 
   private async doInitialize(): Promise<void> {
     try {
-      console.error(`Loading embedding model: ${this.modelName}...`);
       this.extractor = await pipeline('feature-extraction', this.modelName);
-      console.error('Embedding model loaded successfully');
     } catch (error) {
-      console.error('Failed to load embedding model:', error);
-      throw error;
+      throw new Error(
+        `Failed to load embedding model: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -70,8 +69,9 @@ export class EmbeddingService {
       const result = await this.extractor(text, { pooling: 'mean', normalize: true });
       return Array.from(result.data);
     } catch (error) {
-      console.error('Failed to generate embedding:', error);
-      throw error;
+      throw new Error(
+        `Failed to generate embedding: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 

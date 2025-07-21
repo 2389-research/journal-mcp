@@ -9,7 +9,7 @@ import { PrivateJournalServer } from '../src/server';
 
 // Mock node-fetch for remote tests
 jest.mock('node-fetch', () => jest.fn());
-const mockFetch = require('node-fetch') as jest.MockedFunction<typeof fetch>;
+const _mockFetch = require('node-fetch') as jest.MockedFunction<typeof fetch>;
 
 // Mock the remote functions for specific tests
 jest.mock('../src/remote', () => ({
@@ -248,7 +248,9 @@ Some technical notes about the project.
 
       await expect(async () => {
         await serverAny.server.requestHandlers.get('tools/call')(request);
-      }).rejects.toThrow('Failed to read entry: Remote server connection failed');
+      }).rejects.toThrow(
+        'Failed to read entry: Failed to fetch remote entry: Remote server connection failed'
+      );
     });
 
     it('should handle entries with content field instead of sections', async () => {

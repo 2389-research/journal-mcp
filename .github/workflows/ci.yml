@@ -26,17 +26,20 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    - name: Fix Biome permissions
-      run: chmod +x node_modules/@biomejs/cli-linux-x64/biome
+    - name: Run oxlint
+      run: npm run lint
 
-    - name: Run Biome check
-      run: npm run check
+    - name: Fix Biome binary permissions
+      run: chmod +x node_modules/@biomejs/cli-linux-x64/biome || true
+
+    - name: Check Biome formatting
+      run: npx biome check --formatter-enabled=true --linter-enabled=false
+
+    - name: TypeScript type check
+      run: npx tsc --noEmit
 
     - name: Run tests
       run: npm test
-
-    - name: Build project
-      run: npm run build
 
   lint:
     runs-on: ubuntu-latest
@@ -53,8 +56,14 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    - name: Fix Biome permissions
-      run: chmod +x node_modules/@biomejs/cli-linux-x64/biome
+    - name: Run oxlint
+      run: npm run lint
 
-    - name: Run Biome check
-      run: npm run check
+    - name: Fix Biome binary permissions
+      run: chmod +x node_modules/@biomejs/cli-linux-x64/biome || true
+
+    - name: Check Biome formatting
+      run: npx biome check --formatter-enabled=true --linter-enabled=false
+
+    - name: TypeScript type check
+      run: npx tsc --noEmit

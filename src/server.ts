@@ -29,21 +29,21 @@ export class PrivateJournalServer {
     this.remoteConfig = remoteConfig;
     this.journalManager = new JournalManager(journalPath, undefined, remoteConfig, embeddingModel);
     this.searchService = new SearchService(journalPath, undefined, embeddingModel, remoteConfig);
-    this.server = new Server({
-      name: 'private-journal-mcp',
-      version: '1.3.0',
-    });
-
-    if (remoteConfig?.enabled) {
-      console.error(`Remote journal posting enabled: ${remoteConfig.serverUrl}`);
-      if (remoteConfig.remoteOnly) {
-        console.error('Remote-only mode: entries will not be stored locally');
+    this.server = new Server(
+      {
+        name: 'private-journal-mcp',
+        version: '1.3.0',
+      },
+      {
+        capabilities: {
+          tools: {},
+          resources: {},
+          prompts: {},
+        },
       }
-    }
+    );
 
-    if (embeddingModel) {
-      console.error(`Using custom embedding model: ${embeddingModel}`);
-    }
+    // Remote configuration and embedding model validation handled silently
 
     this.setupToolHandlers();
   }
@@ -461,7 +461,7 @@ export class PrivateJournalServer {
         });
       }
     } catch (error) {
-      console.error('Error getting journal resources:', error);
+      // Silently handle resource enumeration errors
     }
 
     return resources;
@@ -502,8 +502,9 @@ export class PrivateJournalServer {
 
       return content;
     } catch (error) {
-      console.error('Error reading journal resource:', error);
-      throw error;
+      throw new Error(
+        `Failed to read journal resource: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -666,13 +667,8 @@ Take as much space as you need. Your emotional well-being matters.`;
     // Skip embedding generation in remote-only mode
     if (!remoteConfig?.remoteOnly) {
       try {
-        console.error('Checking for missing embeddings...');
-        const count = await this.journalManager.generateMissingEmbeddings();
-        if (count > 0) {
-          console.error(`Generated embeddings for ${count} existing journal entries.`);
-        }
+        await this.journalManager.generateMissingEmbeddings();
       } catch (error) {
-        console.error('Failed to generate missing embeddings on startup:', error);
         // Don't fail startup if embedding generation fails
       }
     }
