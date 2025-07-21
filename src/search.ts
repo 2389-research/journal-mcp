@@ -3,15 +3,15 @@
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { type EmbeddingData, EmbeddingService } from './embeddings';
-import { resolveProjectJournalPath, resolveUserJournalPath } from './paths';
+import { type EmbeddingData, EmbeddingService } from './embeddings.js';
+import { resolveProjectJournalPath, resolveUserJournalPath } from './paths.js';
 import {
   getRemoteEntries,
   getRemoteEntryById,
   type RemoteConfig,
   type RemoteSearchRequest,
   searchRemoteServer,
-} from './remote';
+} from './remote.js';
 
 export interface SearchResult {
   path: string;

@@ -1,5 +1,6 @@
-module.exports = {
-  preset: 'ts-jest',
+export default {
+  preset: 'ts-jest/presets/default-esm',
+  extensionsToTreatAsEsm: ['.ts'],
   testEnvironment: 'node',
   roots: ['<rootDir>/tests'],
   testMatch: ['**/*.test.ts'],
@@ -12,7 +13,15 @@ module.exports = {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'json-summary'],
   testTimeout: 60000,
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', {
+      useESM: true
+    }]
+  },
   transformIgnorePatterns: [
-    'node_modules/(?!(node-fetch|@modelcontextprotocol)/)'
+    'node_modules/(?!(node-fetch|@modelcontextprotocol|@xenova)/)'
   ],
+  moduleNameMapping: {
+    '^(\\.{1,2}/.*)\\.js$': '$1'
+  },
 };

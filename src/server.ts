@@ -12,9 +12,9 @@ import {
   ListToolsRequestSchema,
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { JournalManager } from './journal';
-import { createRemoteConfig, type RemoteConfig } from './remote';
-import { SearchService } from './search';
+import { JournalManager } from './journal.js';
+import { createRemoteConfig, type RemoteConfig } from './remote.js';
+import { SearchService } from './search.js';
 
 export class PrivateJournalServer {
   private server: Server;

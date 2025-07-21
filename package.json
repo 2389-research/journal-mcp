@@ -2,6 +2,7 @@
   "name": "private-journal-mcp",
   "version": "1.3.0",
   "description": "A comprehensive MCP server that provides Claude with private journaling, semantic search, resources, and guided prompts for reflection and learning",
+  "type": "module",
   "main": "dist/index.js",
   "bin": {
     "private-journal-mcp": "./dist/index.js"

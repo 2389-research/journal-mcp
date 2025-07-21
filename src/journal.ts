@@ -3,9 +3,9 @@
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { type EmbeddingData, EmbeddingService } from './embeddings';
-import { resolveUserJournalPath } from './paths';
-import { postToRemoteServer, type RemoteConfig, type RemoteJournalPayload } from './remote';
+import { type EmbeddingData, EmbeddingService } from './embeddings.js';
+import { resolveUserJournalPath } from './paths.js';
+import { postToRemoteServer, type RemoteConfig, type RemoteJournalPayload } from './remote.js';
 
 export class JournalManager {
   private projectJournalPath: string;
