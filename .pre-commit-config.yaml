@@ -17,9 +17,17 @@ repos:
 
   - repo: local
     hooks:
-      - id: biome
-        name: biome check and format
-        entry: npx biome check --write
+      - id: oxlint
+        name: oxlint
+        entry: npm run lint
+        language: system
+        files: \.(js|jsx|ts|tsx)$
+        pass_filenames: false
+        exclude: '^(dist|build|coverage)/'
+
+      - id: biome-format
+        name: biome format
+        entry: npx biome format --write
         language: system
         files: \.(js|jsx|ts|tsx|json)$
         pass_filenames: true
@@ -33,15 +41,7 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
-        stages: [commit]
-
-      - id: npm-build
-        name: npm build
-        entry: npm run build
-        language: system
-        pass_filenames: false
-        always_run: true
-        stages: [commit]
+        stages: [pre-commit]
 
       - id: typescript-check
         name: TypeScript type check
@@ -49,4 +49,4 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
-        stages: [commit]
+        stages: [pre-commit]

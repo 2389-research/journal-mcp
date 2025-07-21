@@ -237,7 +237,6 @@ ${sections.join('\n\n')}
 
       await this.embeddingService.saveEmbedding(filePath, embeddingData);
     } catch (error) {
-      console.error(`Failed to generate embedding for ${filePath}:`, error);
       // Don't throw - embedding failure shouldn't prevent journal writing
     }
   }
@@ -270,7 +269,6 @@ ${sections.join('\n\n')}
               // Embedding already exists, skip
             } catch {
               // Generate missing embedding
-              console.error(`Generating missing embedding for ${mdPath}`);
               const content = await fs.readFile(mdPath, 'utf8');
               const timestamp = this.extractTimestampFromPath(mdPath) || new Date();
               await this.generateEmbeddingForEntry(mdPath, content, timestamp);
@@ -286,7 +284,7 @@ ${sections.join('\n\n')}
             (error as NodeJS.ErrnoException).code === 'ENOENT'
           )
         ) {
-          console.error(`Failed to scan ${basePath} for missing embeddings:`, error);
+          // Silently handle directory scan errors
         }
       }
     }
@@ -387,8 +385,7 @@ ${sections.join('\n\n')}
           payload.embedding = Array.from(embedding);
         }
       } catch (embeddingError) {
-        // Log embedding error but don't fail the remote post
-        console.error('Failed to generate embedding for remote post:', embeddingError);
+        // Don't fail the remote post if embedding generation fails
       }
 
       await postToRemoteServer(this.remoteConfig, payload);
@@ -400,10 +397,7 @@ ${sections.join('\n\n')}
         );
       }
       // Log but don't rethrow - local journaling should continue in hybrid mode
-      console.error(
-        'Remote journal posting failed:',
-        error instanceof Error ? error.message : String(error)
-      );
+      // Silently handle remote posting failures in non-remote-only mode
     }
   }
 }

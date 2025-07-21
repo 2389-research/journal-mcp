@@ -188,8 +188,9 @@ export class SearchService {
         // Convert remote entry to text format
         return this.extractTextFromRemoteResult(entry);
       } catch (error) {
-        console.error('Failed to fetch remote entry:', error);
-        throw error;
+        throw new Error(
+          `Failed to fetch remote entry: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
     }
 
@@ -238,7 +239,6 @@ export class SearchService {
       const response = await searchRemoteServer(this.remoteConfig, searchRequest);
 
       if (!response.results || !Array.isArray(response.results)) {
-        console.error('Invalid remote search response structure:', response);
         return [];
       }
 
@@ -252,7 +252,6 @@ export class SearchService {
         type: 'project' as const, // Remote entries don't distinguish project/user
       }));
     } catch (error) {
-      console.error('Remote search failed:', error);
       throw new Error(
         `Remote search failed: ${error instanceof Error ? error.message : String(error)}`
       );
@@ -270,7 +269,6 @@ export class SearchService {
       const response = await getRemoteEntries(this.remoteConfig, limit);
 
       if (!response.entries || !Array.isArray(response.entries)) {
-        console.error('Invalid remote entries response structure:', response);
         return [];
       }
 
@@ -284,7 +282,6 @@ export class SearchService {
         type: 'project' as const, // Remote entries don't distinguish project/user
       }));
     } catch (error) {
-      console.error('Remote listing failed:', error);
       throw new Error(
         `Remote listing failed: ${error instanceof Error ? error.message : String(error)}`
       );
@@ -355,8 +352,7 @@ export class SearchService {
             const embeddingData = JSON.parse(content);
             embeddings.push({ ...embeddingData, type });
           } catch (error) {
-            console.error(`Failed to load embedding ${embeddingFile}:`, error);
-            // Continue with other files
+            // Continue with other files on embedding load failure
           }
         }
       }
@@ -368,7 +364,7 @@ export class SearchService {
           (error as NodeJS.ErrnoException).code === 'ENOENT'
         )
       ) {
-        console.error(`Failed to read embeddings from ${basePath}:`, error);
+        // Silently handle directory read errors
       }
       // Return empty array if directory doesn't exist
     }

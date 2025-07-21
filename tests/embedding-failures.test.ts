@@ -6,7 +6,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { EmbeddingService } from '../src/embeddings';
 import { JournalManager } from '../src/journal';
-import { aggressiveCleanup, safeSpy } from './test-utils';
+import { aggressiveCleanup } from './test-utils';
 
 function getFormattedDate(date: Date): string {
   const year = date.getFullYear();
