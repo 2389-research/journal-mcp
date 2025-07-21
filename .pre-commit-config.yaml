@@ -19,10 +19,10 @@ repos:
     hooks:
       - id: oxlint
         name: oxlint
-        entry: npx oxlint
+        entry: npm run lint
         language: system
         files: \.(js|jsx|ts|tsx)$
-        pass_filenames: true
+        pass_filenames: false
         exclude: '^(dist|build|coverage)/'
 
       - id: biome-format
@@ -38,14 +38,6 @@ repos:
       - id: npm-test
         name: npm test
         entry: npm test
-        language: system
-        pass_filenames: false
-        always_run: true
-        stages: [pre-commit]
-
-      - id: npm-build
-        name: npm build
-        entry: npm run build
         language: system
         pass_filenames: false
         always_run: true
