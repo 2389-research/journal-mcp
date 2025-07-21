@@ -230,6 +230,96 @@ describe('Remote-Only Mode', () => {
       );
     });
 
+    it('should distinguish between file paths and entry IDs', async () => {
+      // These should be treated as file paths and rejected
+      const filePaths = [
+        '/absolute/path/file.md',
+        'relative/path/file.md',
+        './current/dir/file.md',
+        '../parent/dir/file.md',
+        'C:\\Windows\\file.txt',
+        '\\server\\share\\file.txt',
+      ];
+
+      for (const filePath of filePaths) {
+        await expect(searchService.readEntry(filePath)).rejects.toThrow(
+          'Cannot read local files in remote-only mode. Use search to find entry content.'
+        );
+      }
+    });
+
+    it('should fetch remote entries for valid entry IDs', async () => {
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        json: jest.fn().mockResolvedValue({
+          id: 'entry-123',
+          team_id: 'test-team',
+          similarity_score: 1.0,
+          timestamp: 1705316245123,
+          created_at: '2024-01-15T10:30:45.123Z',
+          content: 'Remote entry content',
+        }),
+      };
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
+
+      // These should be treated as entry IDs and fetched from remote
+      const validEntryIds = [
+        'entry-123',
+        'entry_456',
+        'ENTRY789',
+        'abc123def456',
+        'user-journal-entry-20240115',
+      ];
+
+      for (const entryId of validEntryIds) {
+        mockFetch.mockClear();
+        mockResponse.json.mockResolvedValue({
+          id: entryId,
+          content: `Content for ${entryId}`,
+        });
+
+        const result = await searchService.readEntry(entryId);
+
+        expect(result).toBe(`Content for ${entryId}`);
+        expect(mockFetch).toHaveBeenCalledWith(
+          `https://api.example.com/teams/test-team/journal/entries/${entryId}`,
+          expect.objectContaining({
+            method: 'GET',
+            headers: {
+              'X-API-Key': 'test-key',
+            },
+          })
+        );
+      }
+    });
+
+    it('should return null when remote entry is not found', async () => {
+      const mockResponse = {
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+      };
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
+
+      const result = await searchService.readEntry('non-existent-entry');
+      expect(result).toBeNull();
+    });
+
+    it('should handle remote server errors when fetching entries', async () => {
+      const mockResponse = {
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        text: jest.fn().mockResolvedValue('Server error details'),
+      };
+      mockFetch.mockResolvedValue(mockResponse as unknown as Response);
+
+      await expect(searchService.readEntry('entry-123')).rejects.toThrow(
+        'Remote entry fetch error: 500 Internal Server Error - Server error details'
+      );
+    });
+
     it('should throw error when remote search fails', async () => {
       const mockResponse = {
         ok: false,

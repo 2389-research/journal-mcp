@@ -13,24 +13,26 @@ import {
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { JournalManager } from './journal';
-import { createRemoteConfig } from './remote';
+import { createRemoteConfig, type RemoteConfig } from './remote';
 import { SearchService } from './search';
 
 export class PrivateJournalServer {
   private server: Server;
   private journalManager: JournalManager;
   private searchService: SearchService;
+  private remoteConfig?: RemoteConfig;
 
   constructor(journalPath: string) {
     const remoteConfig = createRemoteConfig();
     const embeddingModel = process.env.JOURNAL_EMBEDDING_MODEL;
 
+    this.remoteConfig = remoteConfig;
     this.journalManager = new JournalManager(journalPath, undefined, remoteConfig, embeddingModel);
     this.searchService = new SearchService(journalPath, undefined, embeddingModel, remoteConfig);
     this.server = new Server(
       {
         name: 'private-journal-mcp',
-        version: '1.2.0',
+        version: '1.3.0',
       },
       {
         capabilities: {
@@ -273,7 +275,8 @@ export class PrivateJournalServer {
         }
 
         // Security: Validate file path to prevent traversal attacks
-        if (!this.isPathSafe(args.path)) {
+        // In remote-only mode, path is an entry ID, not a file path
+        if (!this.remoteConfig?.remoteOnly && !this.isPathSafe(args.path)) {
           throw new Error('Access denied: Invalid file path');
         }
 
