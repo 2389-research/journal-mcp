@@ -19,12 +19,12 @@ jest.mock('@xenova/transformers', () => ({
 describe('Simple Coverage Gap Tests', () => {
   let tempDir: string;
   let originalHome: string | undefined;
-  let originalCwd: string;
+  let _originalCwd: string;
 
   beforeEach(async () => {
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'simple-coverage-test-'));
     originalHome = process.env.HOME;
-    originalCwd = process.cwd();
+    _originalCwd = process.cwd();
   });
 
   afterEach(async () => {
@@ -59,7 +59,7 @@ describe('Simple Coverage Gap Tests', () => {
       const journalManager = new JournalManager(tempDir, tempDir);
 
       // Should not throw, but should log error
-      const count = await journalManager.generateMissingEmbeddings();
+      const _count = await journalManager.generateMissingEmbeddings();
 
       // Should have logged the generation attempt
       expect(consoleErrorSpy).toHaveBeenCalledWith(

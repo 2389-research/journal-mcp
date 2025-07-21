@@ -33,7 +33,7 @@ jobs:
       run: chmod +x node_modules/@biomejs/cli-linux-x64/biome || true
 
     - name: Check Biome formatting
-      run: npx biome format --check
+      run: npx biome check --formatter-enabled=true --linter-enabled=false
 
     - name: TypeScript type check
       run: npx tsc --noEmit
@@ -66,7 +66,7 @@ jobs:
       run: chmod +x node_modules/@biomejs/cli-linux-x64/biome || true
 
     - name: Check Biome formatting
-      run: npx biome format --check
+      run: npx biome check --formatter-enabled=true --linter-enabled=false
 
     - name: TypeScript type check
       run: npx tsc --noEmit

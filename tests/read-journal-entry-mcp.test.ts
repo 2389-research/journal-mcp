@@ -9,7 +9,7 @@ import { PrivateJournalServer } from '../src/server';
 
 // Mock node-fetch for remote tests
 jest.mock('node-fetch', () => jest.fn());
-const mockFetch = require('node-fetch') as jest.MockedFunction<typeof fetch>;
+const _mockFetch = require('node-fetch') as jest.MockedFunction<typeof fetch>;
 
 // Mock the remote functions for specific tests
 jest.mock('../src/remote', () => ({
