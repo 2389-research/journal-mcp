@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build outputs
+dist/
+*.js.map
+
+# Test coverage and reports
+coverage/
+*.lcov
+.nyc_output/
+
+# Tests (Claude doesn't need to see test files when using the plugin)
+tests/
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
+jest.config.js
+
+# Documentation and meta files (not needed for plugin usage)
+ARCHITECTURE.md
+CONTRIBUTING.md
+ROADMAP.md
+COVERAGE_BADGE_OPTIONS.md
+code-review.md
+missing-tests.md
+issues.md
+docs/
+
+# Git and GitHub
+.git/
+.github/
+.gitignore
+.pre-commit-config.yaml
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs and temporary files
+*.log
+*.tmp
+.env
+output.txt
+
+# Private journal entries (this is user data, not plugin code)
+.private-journal/
+
+# CI/CD and linting config
+biome.json
+.prettierrc
+tsconfig.json
+oxlint.json
