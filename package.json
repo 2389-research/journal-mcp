@@ -47,6 +47,8 @@
   "files": [
     "dist/**/*",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "claudecode.json",
+    ".claudeignore"
   ]
 }
