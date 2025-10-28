@@ -1,0 +1,13 @@
+{
+  "name": "private-journal-mcp",
+  "version": "1.4.0",
+  "description": "A comprehensive MCP server that provides Claude with private journaling, semantic search, resources, and guided prompts for reflection and learning",
+  "author": {
+    "name": "Jesse Vincent",
+    "email": "jesse@fsck.com"
+  },
+  "repository": "https://github.com/2389-research/journal-mcp",
+  "license": "MIT",
+  "keywords": ["journal", "mcp", "private", "semantic-search", "reflection", "learning"],
+  "mcpServers": "./.mcp.json"
+}

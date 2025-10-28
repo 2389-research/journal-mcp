@@ -48,7 +48,8 @@
     "dist/**/*",
     "README.md",
     "LICENSE",
-    "claudecode.json",
+    ".claude-plugin/**/*",
+    ".mcp.json",
     ".claudeignore"
   ]
 }
