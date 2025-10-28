@@ -165,22 +165,38 @@ The embedding is a numeric array representing the semantic meaning of the journa
 
 The remote server should expect POST requests to `/journal/entries` with `x-api-key` and `x-team-id` headers.
 
-### MCP Configuration
+### Claude Code Plugin
 
-#### Claude Code (One-liner)
+This repository is configured as a Claude Code Plugin. To use it:
+
+#### Quick Install (Recommended)
 ```bash
-claude mcp add-json private-journal '{"type":"stdio","command":"npx","args":["github:obra/private-journal-mcp"]}' -s user
+claude mcp add-json private-journal '{"type":"stdio","command":"npx","args":["github:2389-research/journal-mcp"]}' -s user
 ```
 
+Or install directly from GitHub:
+```bash
+claude mcp install github:2389-research/journal-mcp
+```
+
+#### What's Included
+
+The plugin provides:
+- **Tools**: `process_thoughts`, `search_journal`, `read_journal_entry`, `list_recent_entries`
+- **Resources**: Access to journal entries as discoverable resources
+- **Prompts**: Guided templates for daily reflection, project retrospectives, and learning capture
+
+### MCP Configuration (Other Clients)
+
 #### Manual Configuration
-Add to your MCP settings (e.g., Claude Desktop configuration):
+For Claude Desktop or other MCP clients, add to your MCP settings:
 
 ```json
 {
   "mcpServers": {
     "private-journal": {
       "command": "npx",
-      "args": ["github:obra/private-journal-mcp"]
+      "args": ["github:2389-research/journal-mcp"]
     }
   }
 }
