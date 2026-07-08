@@ -1,5 +1,4 @@
 node_modules/
-dist/
 coverage/
 *.log
 .env
@@ -12,3 +11,4 @@ code-review.md
 issues.md
 output.txt
 COVERAGE_BADGE.md
+.private-journal/

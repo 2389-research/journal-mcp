@@ -38,6 +38,12 @@ jobs:
     - name: TypeScript type check
       run: npx tsc --noEmit
 
+    - name: Build dist
+      run: npm run build
+
+    - name: Verify dist is up to date
+      run: git diff --exit-code dist/
+
     - name: Run tests
       run: npm test
 
