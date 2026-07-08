@@ -33,7 +33,7 @@ repos:
         language: system
         files: \.(js|jsx|ts|tsx|json)$
         pass_filenames: true
-        exclude: '^(dist|build|coverage)/'
+        exclude: '^(dist|build|coverage)/|package-lock\.json'
 
   - repo: local
     hooks:
