@@ -52,7 +52,7 @@ class PrivateJournalServer {
         this.searchService = new search_1.SearchService(journalPath, undefined, embeddingModel, remoteConfig);
         this.server = new index_js_1.Server({
             name: 'private-journal-mcp',
-            version: '1.4.0',
+            version: '1.4.1',
         }, {
             capabilities: {
                 tools: {},
