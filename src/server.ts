@@ -32,7 +32,7 @@ export class PrivateJournalServer {
     this.server = new Server(
       {
         name: 'private-journal-mcp',
-        version: '1.3.0',
+        version: '1.4.0',
       },
       {
         capabilities: {
