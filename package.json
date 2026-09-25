@@ -1,6 +1,6 @@
 {
   "name": "private-journal-mcp",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "A comprehensive MCP server that provides Claude with private journaling, semantic search, resources, and guided prompts for reflection and learning",
   "main": "dist/index.js",
   "bin": {
@@ -16,7 +16,8 @@
     "test:coverage": "jest --coverage",
     "lint": "oxlint src tests",
     "format": "npx @biomejs/biome format --write src tests",
-    "check": "npm run lint && npx biome check --formatter-enabled=true --linter-enabled=false"
+    "check": "npm run lint && npx biome check --formatter-enabled=true --linter-enabled=false",
+    "check:install": "node scripts/check-plugin-install.mjs"
   },
   "keywords": [
     "mcp",
@@ -28,7 +29,7 @@
   "author": "Jesse Vincent <jesse@fsck.com>",
   "license": "MIT",
   "devDependencies": {
-    "@biomejs/biome": "^2.0.2",
+    "@biomejs/biome": "^2.0.6",
     "@types/jest": "^29.0.0",
     "@types/node": "^20.0.0",
     "@types/supertest": "^6.0.3",
@@ -51,5 +52,8 @@
     ".claude-plugin/**/*",
     ".mcp.json",
     ".claudeignore"
-  ]
+  ],
+  "overrides": {
+    "sharp": "^0.33.5"
+  }
 }

@@ -1,6 +1,6 @@
 {
   "files": {
-    "includes": ["src/**/*", "tests/**/*", "*.json"]
+    "includes": ["src/**/*", "tests/**/*", "*.json", ".claude-plugin/*.json"]
   },
   "linter": {
     "enabled": true,

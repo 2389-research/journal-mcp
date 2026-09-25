@@ -1,0 +1,34 @@
+name: Plugin install
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  install-check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js 22.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22.x
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build
+      run: npm run build
+
+    - name: Committed dist matches the build
+      run: |
+        git status --porcelain -- dist
+        test -z "$(git status --porcelain -- dist)"
+
+    - name: Install as Claude Code does and start the MCP servers
+      run: npm run check:install
