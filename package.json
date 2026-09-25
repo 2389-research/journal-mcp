@@ -52,5 +52,8 @@
     ".claude-plugin/**/*",
     ".mcp.json",
     ".claudeignore"
-  ]
+  ],
+  "overrides": {
+    "sharp": "^0.33.5"
+  }
 }
