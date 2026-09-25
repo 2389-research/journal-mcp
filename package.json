@@ -28,7 +28,7 @@
   "author": "Jesse Vincent <jesse@fsck.com>",
   "license": "MIT",
   "devDependencies": {
-    "@biomejs/biome": "^2.0.2",
+    "@biomejs/biome": "^2.0.6",
     "@types/jest": "^29.0.0",
     "@types/node": "^20.0.0",
     "@types/supertest": "^6.0.3",
