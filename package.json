@@ -16,7 +16,8 @@
     "test:coverage": "jest --coverage",
     "lint": "oxlint src tests",
     "format": "npx @biomejs/biome format --write src tests",
-    "check": "npm run lint && npx biome check --formatter-enabled=true --linter-enabled=false"
+    "check": "npm run lint && npx biome check --formatter-enabled=true --linter-enabled=false",
+    "check:install": "node scripts/check-plugin-install.mjs"
   },
   "keywords": [
     "mcp",
