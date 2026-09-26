@@ -396,4 +396,52 @@ describe('JournalManager', () => {
     const uniqueTimestamps = new Set(mdFiles.map((f) => f.split('.')[0]));
     expect(uniqueTimestamps.size).toBe(mdFiles.length);
   });
+
+  // With the random digits fixed, entries written in the same millisecond get the same file name,
+  // so these fail whenever a write replaces an existing entry instead of taking a free name.
+  test('keeps every concurrent entry when their file names collide', async () => {
+    const random = jest.spyOn(Math, 'random').mockReturnValue(0.5);
+    try {
+      const count = 20;
+      await Promise.all(
+        Array.from({ length: count }, (_, i) => journalManager.writeEntry(`Colliding entry <${i}>`))
+      );
+
+      const dayDir = path.join(projectTempDir, getFormattedDate(new Date()));
+      const mdFiles = (await fs.readdir(dayDir)).filter((f) => f.endsWith('.md'));
+      expect(mdFiles).toHaveLength(count);
+      const contents = await Promise.all(
+        mdFiles.map((f) => fs.readFile(path.join(dayDir, f), 'utf8'))
+      );
+      for (let i = 0; i < count; i++) {
+        expect(contents.filter((c) => c.includes(`<${i}>`))).toHaveLength(1);
+      }
+    } finally {
+      random.mockRestore();
+    }
+  });
+
+  test('keeps every concurrent thoughts entry when their file names collide', async () => {
+    const random = jest.spyOn(Math, 'random').mockReturnValue(0.5);
+    try {
+      const count = 20;
+      await Promise.all(
+        Array.from({ length: count }, (_, i) =>
+          journalManager.writeThoughts({ project_notes: `Colliding note <${i}>` })
+        )
+      );
+
+      const dayDir = path.join(projectTempDir, getFormattedDate(new Date()));
+      const mdFiles = (await fs.readdir(dayDir)).filter((f) => f.endsWith('.md'));
+      expect(mdFiles).toHaveLength(count);
+      const contents = await Promise.all(
+        mdFiles.map((f) => fs.readFile(path.join(dayDir, f), 'utf8'))
+      );
+      for (let i = 0; i < count; i++) {
+        expect(contents.filter((c) => c.includes(`<${i}>`))).toHaveLength(1);
+      }
+    } finally {
+      random.mockRestore();
+    }
+  });
 });

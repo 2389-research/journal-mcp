@@ -15,6 +15,8 @@ export declare class JournalManager {
     }): Promise<void>;
     private formatDate;
     private formatTimestamp;
+    private microsecondsFor;
+    private writeNewEntryFile;
     private formatEntry;
     private writeThoughtsToLocation;
     private formatThoughts;
