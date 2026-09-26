@@ -9,12 +9,18 @@ on:
     # Run daily at 2 AM UTC
     - cron: '0 2 * * *'
 
+permissions:
+  contents: read
+  pull-requests: write  # the last step comments the results on the PR
+
 jobs:
   mcp-probe-tests:
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
