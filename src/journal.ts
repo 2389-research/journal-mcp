@@ -35,16 +35,10 @@ export class JournalManager {
     }
 
     const dateString = this.formatDate(timestamp);
-    const timeString = this.formatTimestamp(timestamp);
-
     const dayDirectory = path.join(this.projectJournalPath, dateString);
-    const fileName = `${timeString}.md`;
-    const filePath = path.join(dayDirectory, fileName);
-
-    await this.ensureDirectoryExists(dayDirectory);
 
     const formattedEntry = this.formatEntry(content, timestamp);
-    await fs.writeFile(filePath, formattedEntry, 'utf8');
+    const filePath = await this.writeNewEntryFile(dayDirectory, timestamp, formattedEntry);
 
     // Generate and save embedding
     await this.generateEmbeddingForEntry(filePath, formattedEntry, timestamp);
@@ -99,14 +93,48 @@ export class JournalManager {
     return `${year}-${month}-${day}`;
   }
 
-  private formatTimestamp(date: Date): string {
+  private formatTimestamp(date: Date, microseconds: number): string {
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const seconds = String(date.getSeconds()).padStart(2, '0');
-    const microseconds = String(
-      date.getMilliseconds() * 1000 + Math.floor(Math.random() * 1000)
-    ).padStart(6, '0');
-    return `${hours}-${minutes}-${seconds}-${microseconds}`;
+    return `${hours}-${minutes}-${seconds}-${String(microseconds).padStart(6, '0')}`;
+  }
+
+  // The entry's millisecond plus random digits, so entries written in one millisecond usually differ.
+  private microsecondsFor(date: Date): number {
+    return date.getMilliseconds() * 1000 + Math.floor(Math.random() * 1000);
+  }
+
+  // Writes content as a new entry file in dayDirectory and returns its path. The exclusive flag
+  // ("wx") makes a taken name fail instead of replacing another entry's file; on a clash the
+  // microsecond field steps up to the next free name.
+  private async writeNewEntryFile(
+    dayDirectory: string,
+    timestamp: Date,
+    content: string
+  ): Promise<string> {
+    await this.ensureDirectoryExists(dayDirectory);
+
+    const microsecondsPerSecond = 1000000;
+    const firstMicroseconds = this.microsecondsFor(timestamp);
+    for (let step = 0; step < microsecondsPerSecond; step++) {
+      const microseconds = (firstMicroseconds + step) % microsecondsPerSecond;
+      const filePath = path.join(
+        dayDirectory,
+        `${this.formatTimestamp(timestamp, microseconds)}.md`
+      );
+      try {
+        await fs.writeFile(filePath, content, { encoding: 'utf8', flag: 'wx' });
+        return filePath;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
+          throw error;
+        }
+      }
+    }
+    throw new Error(
+      `No free entry file name left in ${dayDirectory} for ${timestamp.toISOString()}`
+    );
   }
 
   private formatEntry(content: string, timestamp: Date): string {
@@ -144,16 +172,10 @@ ${content}
     basePath: string
   ): Promise<void> {
     const dateString = this.formatDate(timestamp);
-    const timeString = this.formatTimestamp(timestamp);
-
     const dayDirectory = path.join(basePath, dateString);
-    const fileName = `${timeString}.md`;
-    const filePath = path.join(dayDirectory, fileName);
-
-    await this.ensureDirectoryExists(dayDirectory);
 
     const formattedEntry = this.formatThoughts(thoughts, timestamp);
-    await fs.writeFile(filePath, formattedEntry, 'utf8');
+    const filePath = await this.writeNewEntryFile(dayDirectory, timestamp, formattedEntry);
 
     // Generate and save embedding
     await this.generateEmbeddingForEntry(filePath, formattedEntry, timestamp);
